@@ -20,7 +20,7 @@
   "jspm": {
     "registry": "jspm",
     "dependencies": {
-      "log": "github:0n-fuse/holzfella",
+      "log": "github:n-fuse/holzfella",
       "querystring": "github:anchorjs/querystring",
       "lodash": "^3.2.0"
     },

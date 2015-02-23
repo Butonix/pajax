@@ -5,7 +5,7 @@ pajax is a library for promise based xhr request
 
 ### Installation
 ```
-jspm install npm:pajax
+jspm install github:n-fuse/pajax
 ```
 
 ### Usage

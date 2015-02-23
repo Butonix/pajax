@@ -1,0 +1,29 @@
+{
+  "name": "pajax",
+  "description": "Promise based ajax library",
+  "version": "0.1.5",
+  "keywords": ["ajax", "xhr", "promise"],
+  "main": "pajax.js",
+  "author": {
+    "name": "n-fuse GmbH",
+    "email": "info@n-fuse.de",
+    "url": "www.n-fuse.de"
+  },
+  "contributors": [],
+  "license": {
+    "type": "MIT"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/n-fuse/pajax"
+  },
+  "jspm": {
+    "registry": "jspm",
+    "dependencies": {
+      "log": "github:0n-fuse/holzfella",
+      "querystring": "github:anchorjs/querystring",
+      "lodash": "^3.2.0"
+    },
+    "format": "es6"
+  }
+}

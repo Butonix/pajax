@@ -199,7 +199,7 @@ Ajax.prototype.send = function(req) {
         }
       }
 
-      xhr.open(req.method, req.url, true);
+      xhr.open(req.method, pURL, true);
 
       // Add content type header only when sending dat
       if(opts.data && opts.contentType) {

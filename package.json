@@ -19,11 +19,6 @@
   },
   "jspm": {
     "registry": "jspm",
-    "dependencies": {
-      "log": "github:n-fuse/holzfella",
-      "querystring": "github:anchorjs/querystring",
-      "lodash": "^3.2.0"
-    },
     "format": "es6"
   }
 }

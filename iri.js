@@ -1,9 +1,6 @@
 // In memory cache, so we won't parse the same iri twice
 var iriCache = {};
 
-// For parsing query params
-var queryParser = /(?:^|&)([^&=]*)=?([^&]*)/g;
-
 /**
  * For parsing a url into component parts
  * there are other parts which are suppressed (?:) but we only want to represent what would be available
@@ -32,7 +29,6 @@ function isIRI(iri) {
 function parseIRI(iri) {
 
   iri = iri || '';
-
 
   // We first check if we have parsed this URL before, to avoid running the  monster regex over and over
   if(iriCache[iri]) {
@@ -70,7 +66,7 @@ function parseIRI(iri) {
 
       try {
         var url = new URL(tempIRI);
-        var i = keys.length;
+        let i = keys.length;
         while (i--) {
           if (typeof url[keys[i]]  === 'undefined') {
             result[keys[i]] = '';
@@ -97,7 +93,7 @@ function parseIRI(iri) {
     var matches = uriParser.exec(iri);
 
     // Number of indexes pulled from the url via the urlParser (see 'keys')
-    var i = keys.length;
+    let i = keys.length;
 
     while (i--) {
       result[keys[i]] = matches[i] || '';
@@ -106,15 +102,6 @@ function parseIRI(iri) {
 
   result.params = {};
 
-  // Strip the question mark from search
-  var query = result.search ? result.search.substring( result.search.indexOf('?') + 1 ) : '';
-  query.replace(queryParser, function ($0, $1, $2) {
-    //query isn't actually modified, .replace() is used as an iterator to populate params
-    if ($1) {
-      result.params[$1] = $2;
-    }
-  });
-
   // Stored parsed values
   iriCache[iri] = result;
 
@@ -122,7 +109,6 @@ function parseIRI(iri) {
 }
 
 export default parseIRI;
-
 export {
   isIRI,
   parseIRI

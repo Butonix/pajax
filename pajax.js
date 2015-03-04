@@ -175,6 +175,14 @@ class Pajax {
           xhr.setRequestHeader('Content-Type', opts.contentType);
         }
 
+        if (opts.responseType) {
+          try {
+            xhr.responseType = opts.responseType;
+          } catch (err) {
+            // Fallback to type processor 
+          }
+        }
+
         if(opts.headers) {
           for(var p in opts.headers) {
             if(opts.headers.hasOwnProperty(p)) {

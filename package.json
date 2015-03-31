@@ -1,13 +1,13 @@
 {
   "name": "pajax",
   "description": "Promise based ajax library",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "keywords": [
     "ajax",
     "xhr",
     "promise"
   ],
-  "main": "pajax.js",
+  "main": "lib/pajax.js",
   "author": {
     "name": "n-fuse GmbH",
     "email": "info@n-fuse.de",
@@ -21,8 +21,19 @@
     "type": "git",
     "url": "git://github.com/n-fuse/pajax"
   },
+  "devDependencies": {
+    "body-parser": "^1.12.3",
+    "express": "^4.12.3",
+    "jasmine-core": "^2.3.0",
+    "karma": "^0.12.31",
+    "karma-chrome-launcher": "^0.1.8",
+    "karma-express-http-server": "0.0.1",
+    "karma-jasmine": "^0.3.5",
+    "karma-jspm": "^1.1.4"
+  },
   "jspm": {
     "registry": "jspm",
+    "dependencies": {},
     "format": "es6"
   }
 }

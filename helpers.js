@@ -46,7 +46,7 @@ export var parseResponseHeaders = function(headerStr) {
     // if the header value has the string ": " in it.
     var index = headerPair.indexOf('\u003a\u0020');
     if (index > 0) {
-      var key = headerPair.substring(0, index);
+      var key = headerPair.substring(0, index).toLowerCase();
       headers[key] = headerPair.substring(index + 2);
     }
   }

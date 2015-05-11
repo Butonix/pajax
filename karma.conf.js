@@ -18,8 +18,7 @@ module.exports = function(config) {
 
     jspm: {
         // Edit this to your needs
-        loadFiles: ['test/browser*.js'],
-        serveFiles: ['lib/**/*.js']
+        loadFiles: ['test/browser*.js', 'lib/**/*.js'],
     },
 
     expressHttpServer: {
@@ -64,8 +63,16 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['Chrome'],
+    browsers: ['Chrome', 'Firefox'],
 
+    plugins: [
+      // Karma will require() these plugins
+      'karma-jasmine',
+      'karma-jspm',
+      'karma-express-http-server',
+      'karma-chrome-launcher',
+      'karma-firefox-launcher'
+    ],
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits

@@ -1,4 +1,4 @@
-import Pajax from 'pajax';
+import Pajax from '../lib/pajax';
 
 var baseURL = 'http://127.0.0.1:3500';
 
@@ -125,8 +125,8 @@ describe("json", function() {
     });
   });
 
-  describe("class", function() {
-    var pajax = new Pajax.JSON({baseURL: baseURL });
+  describe("Pajax.JSON", function() {
+    var pajax = new Pajax.JSON(true, {baseURL: baseURL });
     it("should get parsed json", function(done) {
       pajax.get('/json')
            .done()

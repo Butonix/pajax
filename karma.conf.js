@@ -4,20 +4,17 @@
 module.exports = function(config) {
   config.set({
 
-    // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
 
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    // frameworks: ['jspm', 'jasmine'],
-    frameworks: ['express-http-server', 'jspm', 'jasmine'],
+    frameworks: ['express-http-server', 'jspm', 'mocha', 'chai'],
 
     // list of files / patterns to load in the browser
     files: [
     ],
 
     jspm: {
-        // Edit this to your needs
         loadFiles: ['test/browser*.js', 'lib/**/*.js'],
     },
 
@@ -47,19 +44,15 @@ module.exports = function(config) {
     // web server port
     port: 9876,
 
-
     // enable / disable colors in the output (reporters and logs)
     colors: true,
-
 
     // level of logging
     // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
     logLevel: config.LOG_INFO,
 
-
     // enable / disable watching file and executing tests whenever any file changes
     autoWatch: true,
-
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
@@ -67,7 +60,8 @@ module.exports = function(config) {
 
     plugins: [
       // Karma will require() these plugins
-      'karma-jasmine',
+      'karma-mocha',
+      'karma-chai',
       'karma-jspm',
       'karma-express-http-server',
       'karma-chrome-launcher',

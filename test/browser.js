@@ -3,8 +3,8 @@ import Pajax from '../lib/pajax';
 var baseURL = 'http://127.0.0.1:3500';
 
 function noCall(res) {
-  console.log('Should not be called', res.body, res.status, res.error);
-  expect(true).toEqual(false);
+  console.log(res.body, res.status, res.error);
+  assert.fail('Should not be called');
 }
 
 describe("basic", function() {
@@ -14,8 +14,8 @@ describe("basic", function() {
     pajax.get('http://127.0.0.1:3500/ok')
          .done()
          .then(res => {
-            expect(res.status).toEqual(200);
-            expect(res.body).toEqual('ok');
+           assert.strictEqual(res.status, 200);
+           assert.strictEqual(res.body, 'ok');
           }).catch(noCall).then(done, done);
   });
 
@@ -24,7 +24,7 @@ describe("basic", function() {
     pajax.get('/ok')
          .done()
          .then(res => {
-           expect(res.body).toEqual('ok');
+           assert.strictEqual(res.body, 'ok');
          }).catch(noCall).then(done, done);
   });
 
@@ -33,10 +33,10 @@ describe("basic", function() {
     pajax.get('/error')
          .done()
          .then(noCall)
-         .catch(req => {
-             expect(req.status).toEqual(500);
-             expect(req.body).toEqual('error');
-             expect(req.statusText).toEqual('Internal Server Error');
+         .catch(res => {
+           assert.strictEqual(res.status, 500);
+           assert.strictEqual(res.body, 'error');
+           assert.strictEqual(res.statusText, 'Internal Server Error');
           })
          .then(done, done);
   });
@@ -51,7 +51,7 @@ describe("advanced", function() {
          .send('foo')
          .done()
          .then(res => {
-            expect(res.body).toEqual('POST: foo');
+           assert.strictEqual(res.body, 'POST: foo');
           }).catch(noCall).then(done, done);
   });
 
@@ -59,8 +59,8 @@ describe("advanced", function() {
     pajax.get('/header')
          .done()
          .then(res => {
-           expect(res.headers['content-type']).toEqual('text/html; charset=utf-8');
-           expect(res.contentType).toEqual('text/html');
+           assert.strictEqual(res.headers['content-type'], 'text/html; charset=utf-8');
+           assert.strictEqual(res.contentType, 'text/html');
          }).catch(noCall).then(done, done);
   });
 
@@ -69,7 +69,7 @@ describe("advanced", function() {
          .header('Accept-Language', 'foo')
          .done()
          .then(res => {
-           expect(res.body).toEqual('accept-language: foo');
+           assert.strictEqual(res.body, 'accept-language: foo');
          }).catch(noCall).then(done, done);
   });
 
@@ -80,7 +80,7 @@ describe("advanced", function() {
          .query('woo', 3)
          .processedURL;
 
-     expect(url).toEqual('http://127.0.0.1:3500/foo?foo=1&bar=2&woo=3');
+    assert.strictEqual(url, 'http://127.0.0.1:3500/foo?foo=1&bar=2&woo=3');
   });
 });
 
@@ -93,7 +93,7 @@ describe("json", function() {
       pajax.get('/json')
            .done()
            .then(res => {
-              expect(res.body).toEqual({foo:"bar"});
+             assert.deepEqual(res.body, {foo:"bar"});
             }).catch(noCall).then(done, done);
     });
 
@@ -102,7 +102,7 @@ describe("json", function() {
            .responseType('json')
            .done()
            .then(res => {
-              expect(res.body).toEqual({foo:"bar"});
+             assert.deepEqual(res.body, {foo:"bar"});
             }).catch(noCall).then(done, done);
     });
 
@@ -111,7 +111,7 @@ describe("json", function() {
            .responseType('text')
            .done()
            .then(res => {
-              expect(res.body).toEqual('{"foo":"bar"}');
+             assert.strictEqual(res.body, '{"foo":"bar"}');
             }).catch(noCall).then(done, done);
     });
 
@@ -120,7 +120,7 @@ describe("json", function() {
            .send({post: 'json'})
            .done()
            .then(res => {
-              expect(res.body).toEqual({post:"json"});
+             assert.deepEqual(res.body, {post:"json"});
             }).catch(noCall).then(done, done);
     });
   });
@@ -131,7 +131,7 @@ describe("json", function() {
       pajax.get('/json')
            .done()
            .then(res => {
-              expect(res.body).toEqual({"foo":"bar"});
+             assert.deepEqual(res.body, {"foo":"bar"});
       }).catch(noCall).then(done);
     });
 
@@ -140,7 +140,7 @@ describe("json", function() {
            .done()
            .then(noCall)
            .catch(res => {
-              expect(res.error).toEqual('Invalid JSON');
+             assert.strictEqual(res.error, 'Invalid JSON');
       }).then(done);
     });
 
@@ -149,7 +149,7 @@ describe("json", function() {
            .send({post: 'json'})
            .done()
            .then(res => {
-              expect(res.body).toEqual({"post":"json"});
+             assert.deepEqual(res.body, {"post":"json"});
             }).catch(noCall).then(done);
     });
   });

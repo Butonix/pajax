@@ -42,6 +42,15 @@ describe("basic", function() {
   });
 });
 
+describe("helpers", function() {
+  it("should have static helpers", function() {
+    assert.strictEqual(typeof Pajax.qsParse, 'function');
+    assert.strictEqual(typeof Pajax.qsStringify, 'function');
+    assert.strictEqual(typeof Pajax.isIRI, 'function');
+    assert.strictEqual(typeof Pajax.parseIRI, 'function');
+  });
+});
+
 describe("advanced", function() {
 
   var pajax = new Pajax({baseURL: baseURL });

@@ -1,7 +1,7 @@
 {
   "name": "pajax",
   "description": "Promise based ajax library",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "keywords": [
     "ajax",
     "xhr",

@@ -7,7 +7,7 @@
     "xhr",
     "promise"
   ],
-  "main": "lib/pajax.js",
+  "main": "lib/main.js",
   "author": {
     "name": "n-fuse GmbH",
     "email": "info@n-fuse.de",

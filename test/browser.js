@@ -1,4 +1,4 @@
-import Pajax from '../lib/pajax';
+import Pajax from '../lib/main';
 
 var baseURL = 'http://127.0.0.1:3500';
 
@@ -126,13 +126,13 @@ describe("json", function() {
   });
 
   describe("Pajax.JSON", function() {
-    var pajax = new Pajax.JSON(true, {baseURL: baseURL });
+    var pajax = new Pajax.JSON({asJSON: true, baseURL: baseURL });
     it("should get parsed json", function(done) {
       pajax.get('/json')
            .done()
            .then(res => {
              assert.deepEqual(res.body, {"foo":"bar"});
-      }).catch(noCall).then(done);
+      }).catch(noCall).then(done, done);
     });
 
     it("should get invalid json and throw error", function(done) {
@@ -141,7 +141,7 @@ describe("json", function() {
            .then(noCall)
            .catch(res => {
              assert.strictEqual(res.error, 'Invalid JSON');
-      }).then(done);
+      }).then(done, done);
     });
 
     it("should post json object", function(done) {
@@ -150,7 +150,7 @@ describe("json", function() {
            .done()
            .then(res => {
              assert.deepEqual(res.body, {"post":"json"});
-            }).catch(noCall).then(done);
+      }).catch(noCall).then(done, done);
     });
   });
 });

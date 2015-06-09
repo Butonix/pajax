@@ -22,7 +22,7 @@
     "url": "git://github.com/n-fuse/pajax"
   },
   "scripts": {
-   "test": "./node_modules/.bin/karma start --single-run"
+    "test": "./node_modules/.bin/karma start --single-run"
   },
   "devDependencies": {
     "body-parser": "^1.12.3",

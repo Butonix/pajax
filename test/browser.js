@@ -48,6 +48,9 @@ describe("helpers", function() {
     assert.strictEqual(typeof Pajax.qsStringify, 'function');
     assert.strictEqual(typeof Pajax.isIRI, 'function');
     assert.strictEqual(typeof Pajax.parseIRI, 'function');
+    assert.strictEqual(typeof Pajax.clone, 'function');
+    assert.strictEqual(typeof Pajax.defaults, 'function');
+    assert.strictEqual(typeof Pajax.merge, 'function');
   });
 });
 

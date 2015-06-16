@@ -40,6 +40,26 @@ describe("basic", function() {
           })
          .then(done, done);
   });
+
+  it("should call done and resolve", function(done) {
+    var pajax = new Pajax();
+    pajax.get('http://127.0.0.1:3500/ok')
+         .then(res => {
+           assert.strictEqual(res.status, 200);
+           assert.strictEqual(res.body, 'ok');
+          }).catch(noCall).then(done, done);
+  });
+
+  it("should call done and reject", function(done) {
+    var pajax = new Pajax({baseURL: baseURL });
+    pajax.get('/error')
+         .catch(res => {
+           assert.strictEqual(res.status, 500);
+           assert.strictEqual(res.body, 'error');
+           assert.strictEqual(res.statusText, 'Internal Server Error');
+          })
+         .then(done, done);
+  });
 });
 
 describe("helpers", function() {

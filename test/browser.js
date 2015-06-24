@@ -40,7 +40,25 @@ describe("basic", function() {
           })
          .then(done, done);
   });
+});
 
+describe("static", function() {
+  it("should make request", function(done) {
+
+    assert.strictEqual(Pajax.get('/url').method, 'GET');
+    assert.strictEqual(Pajax.head('/url').method, 'HEAD');
+    assert.strictEqual(Pajax.post('/url').method, 'POST');
+    assert.strictEqual(Pajax.put('/url').method, 'PUT');
+    assert.strictEqual(Pajax.del('/url').method, 'DELETE');
+    assert.strictEqual(Pajax.request('GET', '/url').method, 'GET');
+
+    Pajax.get('http://127.0.0.1:3500/ok')
+         .done()
+         .then(res => {
+           assert.strictEqual(res.status, 200);
+           assert.strictEqual(res.body, 'ok');
+          }).catch(noCall).then(done, done);
+  });
 });
 
 describe("helpers", function() {

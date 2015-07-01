@@ -88,18 +88,21 @@ pajax.put('/url')
 ### Pipelets
 
 Piplets are transformation tasks for requests.
-They can be called in a before() or after() hook.
+They can be called in a before(), after() or afterSuccess() hook.
 
 ```javascript
 pajax.get(url)
      .before(req=>{
-       // do some stuff before request is sent
+       // do some stuff before a request is sent
      })
      .before(req=>{
-       // do more stuff before request is sent
+       // do more stuff before a request is sent
      })
      .after(res=>{
-         // do some stuff after the request
+         // do some stuff after a request
+     })
+     .afterSuccess(res=>{
+         // do some stuff after a successful request
      })
      .done() // send request
      .then(res=>{
@@ -141,7 +144,7 @@ class AuthNPajax extends Pajax {
 
   getFried(url, opts) {
     return this.get(url, opts)
-               .after(this.addTextToResponse('fried'));
+               .afterSuccess(this.addTextToResponse('fried'));
   }
 
   // Adds authentication token to every request

@@ -22,7 +22,7 @@ There are built-in methods for `get, post, put, patch, del, head`
 
 ```javascript
 pajax.get(url, opts)
-     .done()
+     .send()
      .then(res=>{
         // res.body: the response from the server
       }, res=>{
@@ -34,8 +34,8 @@ pajax.get(url, opts)
 
 ```javascript
 pajax.post(url, opts)
-     .send(data)
-     .done()
+     .attach(data)
+     .send()
      .then(res=>{
        // res.body: the response from the server
      });
@@ -76,8 +76,8 @@ pajax.put('/url')
        ...
      })
      .timeout(5000)
-     .send({ foo: 'bar' })
-     .done()
+     .attach({ foo: 'bar' })
+     .send()
      .then(res=>{
        // res.body: the response from the server
      }, res=>{
@@ -104,7 +104,7 @@ pajax.get(url)
      .afterSuccess(res=>{
          // do some stuff after a successful request
      })
-     .done() // send request
+     .send() // send request
      .then(res=>{
        // res.body: the response from the server
      });
@@ -138,13 +138,13 @@ class Pajax {
 class AuthNPajax extends Pajax {
 
   constructor(authN, opts) {
-    this.authN = authN;
     super(opts);
+    this.authN = authN;
   }
 
-  getFried(url, opts) {
+  getWithFlavor(url, flavor, opts) {
     return this.get(url, opts)
-               .afterSuccess(this.addTextToResponse('fried'));
+               .afterSuccess(this.addTextToResponse(' with ' + flavor));
   }
 
   // Adds authentication token to every request
@@ -167,7 +167,7 @@ class AuthNPajax extends Pajax {
 }
 
 var pajax = new AuthNPajax(authN);
-pajax.getFried('/text/1').done().then(res=>{
+pajax.getWithFlavor('/text/1', 'honey').send().then(res=>{
   ...
 }, res=>{
   ...
@@ -179,7 +179,7 @@ There are also some predefined classes:
 ```javascript
 // For jsons
 var pajax = new Pajax.JSON(opts);
-pajax.get('/url/to/json').done().then(res=>{
+pajax.get('/url/to/json').send().then(res=>{
   res.body; /// js object
 }, res=>{
   ...
@@ -189,7 +189,7 @@ pajax.get('/url/to/json').done().then(res=>{
 ```javascript
 // For url encoded requests
 var pajax = new Pajax.URLEncoded(opts);
-pajax.post('/url', {foo:'bar'}).done().then(response=>{
+pajax.post('/url', {foo:'bar'}).send().then(response=>{
   ...
 }, res=>{
   ...

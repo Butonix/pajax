@@ -12,7 +12,7 @@ describe("basic", function() {
   it("should make request", function(done) {
     var pajax = new Pajax();
     pajax.get('http://127.0.0.1:3500/ok')
-         .done()
+         .send()
          .then(res => {
            assert.strictEqual(res.status, 200);
            assert.strictEqual(res.body, 'ok');
@@ -22,7 +22,7 @@ describe("basic", function() {
   it("should make request with base url", function(done) {
     var pajax = new Pajax({baseURL: baseURL });
     pajax.get('/ok')
-         .done()
+         .send()
          .then(res => {
            assert.strictEqual(res.body, 'ok');
          }).catch(noCall).then(done, done);
@@ -31,7 +31,7 @@ describe("basic", function() {
   it("should reject request", function(done) {
     var pajax = new Pajax({baseURL: baseURL });
     pajax.get('/error')
-         .done()
+         .send()
          .then(noCall)
          .catch(res => {
            assert.strictEqual(res.status, 500);
@@ -53,7 +53,7 @@ describe("static", function() {
     assert.strictEqual(Pajax.request('GET', '/url').method, 'GET');
 
     Pajax.get('http://127.0.0.1:3500/ok')
-         .done()
+         .send()
          .then(res => {
            assert.strictEqual(res.status, 200);
            assert.strictEqual(res.body, 'ok');
@@ -84,8 +84,8 @@ describe("advanced", function() {
 
   it("should post data", function(done) {
     pajax.post('/data')
-         .send('foo')
-         .done()
+         .attach('foo')
+         .send()
          .then(res => {
            assert.strictEqual(res.body, 'POST: foo');
           }).catch(noCall).then(done, done);
@@ -93,7 +93,7 @@ describe("advanced", function() {
 
   it("should receice the response headers", function(done) {
     pajax.get('/header')
-         .done()
+         .send()
          .then(res => {
            assert.strictEqual(res.headers['content-type'], 'text/html; charset=utf-8');
            assert.strictEqual(res.contentType, 'text/html');
@@ -103,20 +103,44 @@ describe("advanced", function() {
   it("should send the headers", function(done) {
     pajax.get('/header')
          .header('Accept-Language', 'foo')
-         .done()
+         .send()
          .then(res => {
            assert.strictEqual(res.body, 'accept-language: foo');
          }).catch(noCall).then(done, done);
   });
 
   it("should add query params to url", function() {
-    var url = pajax.get('/foo')
-         .query({foo:1})
-         .query({bar:2})
+    var url = pajax.get('/url?foo=0&me=4')
+         .query({foo:1}) // overrides foo=0
+         .query({bar:2}) // merges bar=2
          .query('woo', 3)
          .processedURL;
 
-    assert.strictEqual(url, 'http://127.0.0.1:3500/foo?foo=1&bar=2&woo=3');
+    assert.strictEqual(url, 'http://127.0.0.1:3500/url?foo=1&bar=2&woo=3&me=4');
+  });
+});
+
+describe("hooks", function() {
+
+  var pajax = new Pajax({baseURL: baseURL });
+
+  it("should call the hooks", function(done) {
+    pajax.get('/header')
+         .before(req=>{
+           req.opts.headers = {};
+           req.opts.headers['Accept-Language'] = 'foo';
+         })
+         .after(res=>{
+           res.decoration = 'flowers';
+         })
+         .afterSuccess(res=>{
+           res.body = res.body.replace('foo', 'bar')
+         })
+         .send()
+         .then(res => {
+           assert.strictEqual(res.body, 'accept-language: bar');
+           assert.strictEqual(res.decoration, 'flowers');
+         }).catch(noCall).then(done, done);
   });
 });
 
@@ -127,7 +151,7 @@ describe("json", function() {
 
     it("should get parsed json via serializer", function(done) {
       pajax.get('/json')
-           .done()
+           .send()
            .then(res => {
              assert.deepEqual(res.body, {foo:"bar"});
             }).catch(noCall).then(done, done);
@@ -136,7 +160,7 @@ describe("json", function() {
     it("should get parsed json via response type", function(done) {
       pajax.get('/json')
            .responseType('json')
-           .done()
+           .send()
            .then(res => {
              assert.deepEqual(res.body, {foo:"bar"});
             }).catch(noCall).then(done, done);
@@ -144,8 +168,8 @@ describe("json", function() {
 
     it("should get json as text", function(done) {
       pajax.get('/json')
-           .responseType('text')
-           .done()
+           .asText()
+           .send()
            .then(res => {
              assert.strictEqual(res.body, '{"foo":"bar"}');
             }).catch(noCall).then(done, done);
@@ -153,8 +177,8 @@ describe("json", function() {
 
     it("should convert data to json object as fallback", function(done) {
       pajax.post('/json')
-           .send({post: 'json'})
-           .done()
+           .attach({post: 'json'})
+           .send()
            .then(res => {
              assert.deepEqual(res.body, {post:"json"});
             }).catch(noCall).then(done, done);
@@ -162,10 +186,10 @@ describe("json", function() {
   });
 
   describe("Pajax.JSON", function() {
-    var pajax = new Pajax.JSON({asJSON: true, baseURL: baseURL });
+    var pajax = new Pajax.JSON({baseURL: baseURL });
     it("should get parsed json", function(done) {
       pajax.get('/json')
-           .done()
+           .send()
            .then(res => {
              assert.deepEqual(res.body, {"foo":"bar"});
       }).catch(noCall).then(done, done);
@@ -173,20 +197,30 @@ describe("json", function() {
 
     it("should get invalid json and throw error", function(done) {
       pajax.get('/ok')
-           .done()
+           .send()
            .then(noCall)
            .catch(res => {
-             assert.strictEqual(res.error, 'Invalid JSON');
+             assert.strictEqual(res.error, 'Invalid response');
       }).then(done, done);
     });
 
     it("should post json object", function(done) {
       pajax.post('/json')
-           .send({post: 'json'})
-           .done()
+           .attach({post: 'json'})
+           .send()
            .then(res => {
              assert.deepEqual(res.body, {"post":"json"});
       }).catch(noCall).then(done, done);
+    });
+
+
+    it("should get json as text", function(done) {
+      pajax.get('/json')
+           .asText()
+           .send()
+           .then(res => {
+             assert.strictEqual(res.body, '{"foo":"bar"}');
+            }).catch(noCall).then(done, done);
     });
   });
 });

@@ -3,7 +3,7 @@ import Pajax from '../lib/main';
 var baseURL = 'http://127.0.0.1:3500';
 
 function noCall(res) {
-  console.log(res.body, res.status, res.error);
+  console.log('noCall', res);
   assert.fail('Should not be called');
 }
 
@@ -16,7 +16,7 @@ describe("basic", function() {
          .then(res => {
            assert.strictEqual(res.status, 200);
            assert.strictEqual(res.body, 'ok');
-          }).catch(noCall).then(done, done);
+         }, noCall).then(done, done);
   });
 
   it("should make request with base url", function(done) {
@@ -25,7 +25,7 @@ describe("basic", function() {
          .send()
          .then(res => {
            assert.strictEqual(res.body, 'ok');
-         }).catch(noCall).then(done, done);
+         }, noCall).then(done, done);
   });
 
   it("should reject request", function(done) {
@@ -37,8 +37,7 @@ describe("basic", function() {
            assert.strictEqual(res.status, 500);
            assert.strictEqual(res.body, 'error');
            assert.strictEqual(res.statusText, 'Internal Server Error');
-          })
-         .then(done, done);
+          }).then(done, done);
   });
 });
 
@@ -57,7 +56,7 @@ describe("static", function() {
          .then(res => {
            assert.strictEqual(res.status, 200);
            assert.strictEqual(res.body, 'ok');
-          }).catch(noCall).then(done, done);
+         }, noCall).then(done, done);
   });
 });
 
@@ -88,16 +87,16 @@ describe("advanced", function() {
          .send()
          .then(res => {
            assert.strictEqual(res.body, 'POST: foo');
-          }).catch(noCall).then(done, done);
+         }, noCall).then(done, done);
   });
 
-  it("should receice the response headers", function(done) {
+  it("should receive the response headers", function(done) {
     pajax.get('/header')
          .send()
          .then(res => {
            assert.strictEqual(res.headers['content-type'], 'text/html; charset=utf-8');
            assert.strictEqual(res.contentType, 'text/html');
-         }).catch(noCall).then(done, done);
+         }, noCall).then(done, done);
   });
 
   it("should send the headers", function(done) {
@@ -106,7 +105,7 @@ describe("advanced", function() {
          .send()
          .then(res => {
            assert.strictEqual(res.body, 'accept-language: foo');
-         }).catch(noCall).then(done, done);
+         }, noCall).then(done, done);
   });
 
   it("should add query params to url", function() {
@@ -140,7 +139,7 @@ describe("hooks", function() {
          .then(res => {
            assert.strictEqual(res.body, 'accept-language: bar');
            assert.strictEqual(res.decoration, 'flowers');
-         }).catch(noCall).then(done, done);
+         }, noCall).then(done, done);
   });
 });
 
@@ -154,7 +153,7 @@ describe("json", function() {
            .send()
            .then(res => {
              assert.deepEqual(res.body, {foo:"bar"});
-            }).catch(noCall).then(done, done);
+           }, noCall).then(done, done);
     });
 
     it("should get parsed json via response type", function(done) {
@@ -163,7 +162,7 @@ describe("json", function() {
            .send()
            .then(res => {
              assert.deepEqual(res.body, {foo:"bar"});
-            }).catch(noCall).then(done, done);
+           }, noCall).then(done, done);
     });
 
     it("should get json as text", function(done) {
@@ -172,7 +171,7 @@ describe("json", function() {
            .send()
            .then(res => {
              assert.strictEqual(res.body, '{"foo":"bar"}');
-            }).catch(noCall).then(done, done);
+           }, noCall).then(done, done);
     });
 
     it("should convert data to json object as fallback", function(done) {
@@ -181,27 +180,19 @@ describe("json", function() {
            .send()
            .then(res => {
              assert.deepEqual(res.body, {post:"json"});
-            }).catch(noCall).then(done, done);
+           }, noCall).then(done, done);
     });
   });
 
   describe("Pajax.JSON", function() {
-    var pajax = new Pajax.JSON({baseURL: baseURL });
+    var pajax = new Pajax.JSON({ baseURL: baseURL });
     it("should get parsed json", function(done) {
-      pajax.get('/json')
+      // JSON as contentType text
+      pajax.get('/jsontext')
            .send()
            .then(res => {
              assert.deepEqual(res.body, {"foo":"bar"});
-      }).catch(noCall).then(done, done);
-    });
-
-    it("should get invalid json and throw error", function(done) {
-      pajax.get('/ok')
-           .send()
-           .then(noCall)
-           .catch(res => {
-             assert.strictEqual(res.error, 'Invalid response');
-      }).then(done, done);
+           }, noCall).then(done, done);
     });
 
     it("should post json object", function(done) {
@@ -210,17 +201,27 @@ describe("json", function() {
            .send()
            .then(res => {
              assert.deepEqual(res.body, {"post":"json"});
-      }).catch(noCall).then(done, done);
+           }, noCall).then(done, done);
     });
 
 
     it("should get json as text", function(done) {
+      // Force
       pajax.get('/json')
            .asText()
            .send()
            .then(res => {
              assert.strictEqual(res.body, '{"foo":"bar"}');
-            }).catch(noCall).then(done, done);
+           }, noCall).then(done, done);
+    });
+
+    var pajax2 = new Pajax.JSON({ forceJSON: false, baseURL: baseURL });
+    it("should get invalid json as text", function(done) {
+      pajax2.get('/ok')
+           .send()
+           .then(res => {
+             assert.strictEqual(res.body, 'ok');
+           }, noCall).then(done, done);
     });
   });
 });

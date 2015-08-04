@@ -34,6 +34,10 @@ module.exports = function(app, log) {
     res.json({foo: 'bar'});
   });
 
+  app.get('/jsontext', function(req, res){
+    res.send('{"foo": "bar"}');
+  });
+
   app.all('/json', function(req, res){
     res.json(req.body);
   });

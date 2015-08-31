@@ -49,7 +49,7 @@ describe("static", function() {
     assert.strictEqual(Pajax.post('/url').method, 'POST');
     assert.strictEqual(Pajax.put('/url').method, 'PUT');
     assert.strictEqual(Pajax.del('/url').method, 'DELETE');
-    assert.strictEqual(Pajax.request('GET', '/url').method, 'GET');
+    assert.strictEqual(Pajax.request('/url').method, 'GET');
 
     Pajax.get('http://127.0.0.1:3500/ok')
          .send()

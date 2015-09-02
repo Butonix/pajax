@@ -119,13 +119,13 @@ e.g. the implementation of the default get-method creates a chainable requests.
 
 class Pajax {
   get(url, opts) {
-    return this.request('GET', url, opts);
+    return this.request(url, opts, 'GET');
   }
 
   // Creates a request object
-  request(method, url, opts) {
+  request(url, opts, method) {
     ...
-    return new PajaxRequest(method, url, opts);
+    return new PajaxRequest(url, opts, method, this);
   }
   ...
 }
@@ -148,8 +148,8 @@ class AuthNPajax extends Pajax {
   }
 
   // Adds authentication token to every request
-  request(method, url, opts) {
-    return super.request(method, url, opts)
+  request(url, opts, method) {
+    return super.request(url, opts, method)
                 .before(this.addToken())
   }
 

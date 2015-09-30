@@ -1,6 +1,6 @@
 export var createResult = function(xhr, error) {
   return {
-    response: xhr.response || (( xhr.responseType == 'text' || xhr.responseType == '') ? xhr.responseText : xhr.response )),
+    response: xhr.response || (( xhr.responseType == 'text' || xhr.responseType == '') ? xhr.responseText : xhr.response ),
     status: xhr.status,
     statusText: xhr.statusText,
     xhr: xhr,

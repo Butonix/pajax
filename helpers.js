@@ -1,6 +1,6 @@
 export var createResult = function(xhr, error) {
   return {
-    response: xhr.response,
+    response: xhr.response || xhr.responseText,
     status: xhr.status,
     statusText: xhr.statusText,
     xhr: xhr,

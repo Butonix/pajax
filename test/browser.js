@@ -156,7 +156,7 @@ describe("json", function() {
            }, noCall).then(done, done);
     });
 
-    it("should get parsed json via response type", function(done) {
+    it("should get parsed json via response type. Not working in some (older) Browsers.", function(done) {
       pajax.get('/json')
            .responseType('json')
            .send()

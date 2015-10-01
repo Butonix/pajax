@@ -11,11 +11,10 @@ module.exports = function(config) {
     frameworks: ['express-http-server', 'jspm', 'mocha', 'chai'],
 
     // list of files / patterns to load in the browser
-    files: [
-    ],
+    files: [],
 
     jspm: {
-        loadFiles: ['test/browser*.js', 'lib/**/*.js'],
+        loadFiles: ['test/browser*.js', 'lib/**/*.js']
     },
 
     expressHttpServer: {
@@ -56,7 +55,7 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['Chrome', 'Firefox'],
+    browsers: ['Chrome', 'Firefox', 'IE'],
 
     plugins: [
       // Karma will require() these plugins
@@ -65,7 +64,8 @@ module.exports = function(config) {
       'karma-jspm',
       'karma-express-http-server',
       'karma-chrome-launcher',
-      'karma-firefox-launcher'
+      'karma-firefox-launcher',
+      'karma-ie-launcher'
     ],
 
     // Continuous Integration mode

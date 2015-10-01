@@ -26,15 +26,15 @@
   },
   "devDependencies": {
     "body-parser": "^1.12.3",
-    "chai": "^2.3.0",
+    "chai": "^3.3.0",
     "express": "^4.12.3",
-    "karma": "^0.12.31",
+    "karma": "^0.13.0",
     "karma-chai": "^0.1.0",
-    "karma-chrome-launcher": "^0.1.8",
+    "karma-chrome-launcher": "^0.2.0",
     "karma-express-http-server": "0.0.1",
     "karma-firefox-launcher": "^0.1.4",
-    "karma-jspm": "^1.1.4",
-    "karma-mocha": "^0.1.10",
+    "karma-jspm": "^2.0.0",
+    "karma-mocha": "^0.2.0",
     "mocha": "^2.2.4"
   },
   "jspm": {

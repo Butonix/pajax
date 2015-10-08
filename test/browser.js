@@ -185,11 +185,10 @@ describe("json", function() {
   });
 
   describe("Pajax.JSON", function() {
-    var pajax = new Pajax.JSON({ baseURL: baseURL });
+    var pajax = new Pajax.JSON({ baseURL: baseURL, forceJSON: true });
     it("should get parsed json", function(done) {
       // JSON as contentType text
       pajax.get('/jsontext')
-           .asJSON()
            .send()
            .then(res => {
              assert.deepEqual(res.body, {"foo":"bar"});
@@ -216,6 +215,15 @@ describe("json", function() {
            }, noCall).then(done, done);
     });
 
+    it("should reject invalid json", function(done) {
+      pajax.get('/ok')
+           .send()
+           .then(noCall, res => {
+             assert.strictEqual(res.error, 'Invalid response');
+             assert.strictEqual(res.body, 'ok');
+           }).then(done, done);
+    });
+
     var pajax2 = new Pajax.JSON({ forceJSON: false, baseURL: baseURL });
     it("should get invalid json as text", function(done) {
       pajax2.get('/ok')
@@ -224,5 +232,6 @@ describe("json", function() {
              assert.strictEqual(res.body, 'ok');
            }, noCall).then(done, done);
     });
+
   });
 });

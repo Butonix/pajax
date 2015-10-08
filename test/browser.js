@@ -189,6 +189,7 @@ describe("json", function() {
     it("should get parsed json", function(done) {
       // JSON as contentType text
       pajax.get('/jsontext')
+           .asJSON()
            .send()
            .then(res => {
              assert.deepEqual(res.body, {"foo":"bar"});

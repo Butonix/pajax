@@ -1,3 +1,5 @@
+
+
 #pajax
 
 pajax is a library for promise based xhr request
@@ -88,7 +90,7 @@ pajax.put('/url')
 ### Pipelets
 
 Piplets are transformation tasks for requests.
-They can be called in a before(), after() or afterSuccess() hook.
+They can be called in a before(), after(), afterSuccess() or afterFailure() hook.
 
 ```javascript
 pajax.get(url)
@@ -103,6 +105,9 @@ pajax.get(url)
      })
      .afterSuccess(res=>{
          // do some stuff after a successful request
+     })
+     .afterFailure(res=>{
+         // do some stuff after a failed request
      })
      .send() // send request
      .then(res=>{
@@ -125,55 +130,79 @@ class Pajax {
   // Creates a request object
   request(url, opts, method) {
     ...
-    return new PajaxRequest(url, opts, method, this);
+    return new this.RequestClass(url, opts, method, this);
   }
   ...
 }
 
 ```
 
-// You can implement custom methods or overwrite the existing ones.
+You can implement custom methods or overwrite the existing ones.
+
 ```javascript
 
-class AuthNPajax extends Pajax {
-
-  constructor(authN, opts) {
-    super(opts);
-    this.authN = authN;
-  }
-
-  getWithFlavor(url, flavor, opts) {
-    return this.get(url, opts)
-               .afterSuccess(this.addTextToResponse(' with ' + flavor));
-  }
-
-  // Adds authentication token to every request
-  request(url, opts, method) {
-    return super.request(url, opts, method)
-                .before(this.addToken())
-  }
-
-  addToken() {
-    return req=>{
-      req.header('Authorization', 'Bearer ' + this.authN.accessToken);
-    }
-  }
-
-  addTextToResponse(text) {
-    return res=>{
-      res.body = text + res.body;
-    }
+// Class for the request objects
+class MyRequest extends Pajax.Request {
+  authenticate() {
+    var authToken = this.opts.authToken;
+    return this.before(req=>{
+      req.header('authorization', `Bearer ${authToken}`);
+    });
   }
 }
 
-var pajax = new AuthNPajax(authN);
-pajax.getWithFlavor('/text/1', 'honey').send().then(res=>{
-  ...
-}, res=>{
-  ...
-});
-```
+// Class for the result objects
+class MyResult extends Pajax.Result {
+  get isJSON() {
+    return typeof this.body==='object';
+  }
+}
 
+// Custom pajax class
+class MyPajax extends Pajax {
+
+  // Add token to put/post/del
+  post(...args) {
+    return super.post(...args).authenticate();
+  }
+  put(...args) {
+    return super.put(...args).authenticate();
+  }
+  del(...args) {
+    return super.del(...args).authenticate();
+  }
+
+  // Override request class
+  get RequestClass() {
+    return MyRequest;
+  }
+
+  // Override result class
+  get ResultClass() {
+    return MyResult;
+  }
+}
+
+var pajax = new MyPajax({
+  authToken: 'foo'
+});
+
+pajax.get(url)
+     .authenticate() // Adds bearer token to request
+     .send()
+     .then(res => {
+       // res.isAuthenticated = true
+       // res.isJSON = true/false
+     });
+
+// bearer token is added by Pajax class
+pajax.post(url)
+     .send()
+     .then(res => {
+       // res.isAuthenticated = true
+       // res.isJSON = true/false
+     });     
+```
 There are also some predefined classes:
 
 ```javascript

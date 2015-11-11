@@ -10,7 +10,8 @@ module.exports = function(app, log) {
   app.use(function(req, res, next) {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,HEAD');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Authorization");
+
     next();
   });
 
@@ -25,9 +26,8 @@ module.exports = function(app, log) {
     res.status(500).send('error');
   });
 
-  app.all('/echo', function(req, res){
-    res.writeHead(200, req.headers);
-    req.pipe(res);
+  app.all('/headerecho', function(req, res){
+    res.json(req.headers);
   });
 
   app.get('/json', function(req, res){

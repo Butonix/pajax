@@ -275,4 +275,42 @@ describe("json", function() {
     });
 
   });
+
+  describe("Custom pajax", function() {
+
+    class MyRequest extends Pajax.Request {
+      callFooInResult() {
+        this.afterSuccess(res=>{
+          res.foo();
+        });
+        return this;
+      }
+    }
+
+    class MyResult extends Pajax.Result {
+      foo() {
+        this.fooWasCalled = true;
+      }
+    }
+
+    class MyPajax extends Pajax {
+
+      get RequestClass() {
+        return MyRequest;
+      }
+      get ResultClass() {
+        return MyResult;
+      }
+    }
+
+    var pajax = new MyPajax({ baseURL: baseURL });
+    it("should use custom classes", function(done) {
+      pajax.get('/ok')
+           .callFooInResult()
+           .send()
+           .then(res => {
+             assert.strictEqual(res.fooWasCalled, true);
+           }, noCall).then(done, done);
+    });
+  });
 });

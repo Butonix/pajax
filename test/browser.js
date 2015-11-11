@@ -117,6 +117,35 @@ describe("advanced", function() {
 
     assert.strictEqual(url, 'http://127.0.0.1:3500/url?foo=1&bar=2&woo=3&me=4');
   });
+
+  it("should retry the request", function(done) {
+
+    function retry(req, cb) {
+      return req.send().catch(res=>{
+        return cb(res).then(doRetry=>{
+          if(doRetry) {
+            return retry(res.request, cb);
+          } else {
+            return Promise.reject(res);
+          }
+        }).catch(()=>{
+          return Promise.reject(res);
+        });
+      });
+    }
+
+    var i = 0;
+    function callback(res) {
+      i++;
+      return Promise.resolve(i<3);
+    }
+
+    var req = pajax.get('/error');
+    retry(req, callback).then(noCall, res=>{
+      assert.strictEqual(i, 3);
+      done();
+    });
+  });
 });
 
 describe("hooks", function() {

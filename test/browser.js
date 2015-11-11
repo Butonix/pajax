@@ -169,6 +169,18 @@ describe("hooks", function() {
            assert.strictEqual(res.body, 'accept-language: bar');
            assert.strictEqual(res.decoration, 'flowers');
          }, noCall).then(done, done);
+
+     pajax.get('/error')
+          .afterFailure(res=>{
+            assert.strictEqual(res.error, 'Internal Server Error');
+            //remove error
+            res.error = null;
+          })
+          .send()
+          .then(res => {
+            // not rejected and no error
+            assert.strictEqual(res.error, null);
+          }, noCall).then(done, done);
   });
 });
 

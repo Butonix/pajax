@@ -28,7 +28,8 @@
   },
   "devDependencies": {
     "body-parser": "^1.12.3",
-    "express": "^4.12.3"
+    "express": "^4.12.3",
+    "testem": "^0.9.11"
   },
   "jspm": {
     "registry": "jspm",

@@ -1,5 +1,7 @@
 #pajax
 
+[![Build Status](http://img.shields.io/travis/n-fuse/pajax.svg?style=flat)](https://travis-ci.org/n-fuse/pajax)
+
 pajax is a library for promise based xhr request
 
 ## Installation

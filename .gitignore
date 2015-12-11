@@ -2,3 +2,11 @@
 jspm_packages
 node_modules
 server/server.pid
+
+coverage/
+
+.project
+.settings
+
+*.log
+*~

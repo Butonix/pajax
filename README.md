@@ -1,13 +1,13 @@
-
-
-#pajax
+# pajax
 
 [![Build Status](http://img.shields.io/travis/n-fuse/pajax.svg?style=flat)](https://travis-ci.org/n-fuse/pajax)
 
-pajax is a library for promise based xhr request
+pajax is a library for promise based XHR request.
+It has similarities with the upcoming [Fetch](https://fetch.spec.whatwg.org/) standard.
 
 ## Installation
-```
+
+```sh
 jspm install github:n-fuse/pajax
 ```
 
@@ -226,7 +226,3 @@ pajax.post('/url', {foo:'bar'}).send().then(response=>{
   ...
 });
 ```
-
-### License
-
-[MIT license](LICENSE.txt)

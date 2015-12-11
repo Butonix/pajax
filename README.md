@@ -17,10 +17,10 @@ jspm install github:n-fuse/pajax
 
 ```javascript
 import Pajax from 'pajax';
-var pajax = new Pajax(defaultOpts);
+var pajax = new Pajax();
 ```
 
-There are built-in methods for `get, post, put, patch, del, head`
+There are built-in methods for `get`, `post`, `put`, `patch`, `delete` and `head`
 
 ### Fetching data
 
@@ -38,7 +38,7 @@ pajax.get(url, opts)
 
 ```javascript
 pajax.post(url, opts)
-     .attach(data)
+     .attach(body)
      .send()
      .then(res=>{
        // res.body: the response from the server
@@ -49,7 +49,7 @@ pajax.post(url, opts)
 
 - url (string) - the absolute or relative URL for this request
 - opts (object) - set of key/value pairs to configure this ajax request
-- data (mixed) - the data to be sent
+- body (mixed) - the data to be sent
 
 #### Options (opts):
 
@@ -63,7 +63,7 @@ pajax.post(url, opts)
 - withCredentials (boolean) - en/disables withCredentials
 
 
-It is also possible to set the options via chaining in each request
+It is also possible to set the options by chaining methods in a request
 
 ```javascript
 var pajax = new Pajax();
@@ -83,33 +83,45 @@ pajax.put('/url')
      .attach({ foo: 'bar' })
      .send()
      .then(res=>{
-       // res.body: the response from the server
+       res.body; // the response from the server
      }, res=>{
-       // error
+       res.error; // the error
      });
- ```
+```
 
-### Pipelets
+Call the methods on the pajax instance to set the options for every request.
 
-Piplets are transformation tasks for requests.
-They can be called in a before(), after(), afterSuccess() or afterFailure() hook.
+```javascript
+var pajax = new Pajax().header('Accept-Language', 'en').noCache();
+pajax.get().send().then(...);
+
+```
+
+### Request/Response transformations
+
+There are hooks to register transformation tasks for requests and responses
 
 ```javascript
 pajax.get(url)
      .before(req=>{
+       req; // request object
        // do some stuff before a request is sent
      })
      .before(req=>{
+       req; // request object
        // do more stuff before a request is sent
      })
      .after(res=>{
-         // do some stuff after a request
+       res; // response object
+       // do some stuff after a request
      })
      .afterSuccess(res=>{
-         // do some stuff after a successful request
+       res; // response object
+       // do some stuff after a successful request
      })
      .afterFailure(res=>{
-         // do some stuff after a failed request
+       res; // response object
+       // do some stuff after a failed request
      })
      .send() // send request
      .then(res=>{
@@ -117,36 +129,27 @@ pajax.get(url)
      });
 ```
 
-## The Pajax Class
+Call the methods on the pajax instance to register transformation tasks for every request.
 
-The Pajax class serves as a kind of factory for requests.
-e.g. the implementation of the default get-method creates a chainable requests.
+```javascript
+var pajax = new Pajax().before(req=>{
+       // do some stuff before a request is sent
+     });
 
-``` javascript
-
-class Pajax {
-  get(url, opts) {
-    return this.request(url, opts, 'GET');
-  }
-
-  // Creates a request object
-  request(url, opts, method) {
-    ...
-    return new this.RequestClass(url, opts, method, this);
-  }
-  ...
-}
+pajax.get().send().then(...);
 
 ```
 
-You can implement custom methods or overwrite the existing ones.
+## The Pajax/Request/Response Class
+
+The Pajax class serves as a factory for request class instances.
+You can implement custom methods or override the existing ones.
 
 ```javascript
 
 // Class for the request objects
 class MyRequest extends Pajax.Request {
-  authenticate() {
-    var authToken = this.opts.authToken;
+  authenticate(authToken) {
     return this.before(req=>{
       req.header('authorization', `Bearer ${authToken}`);
     });
@@ -154,7 +157,7 @@ class MyRequest extends Pajax.Request {
 }
 
 // Class for the result objects
-class MyResult extends Pajax.Result {
+class MyResponse extends Pajax.Response {
   get isJSON() {
     return typeof this.body==='object';
   }
@@ -163,34 +166,31 @@ class MyResult extends Pajax.Result {
 // Custom pajax class
 class MyPajax extends Pajax {
 
+  constructor(token, ...args) {
+    super(...args);
+    this.token = token;
+  }
   // Add token to put/post/del
   post(...args) {
-    return super.post(...args).authenticate();
+    return super.post(...args).authenticate(this.token);
   }
   put(...args) {
-    return super.put(...args).authenticate();
+    return super.put(...args).authenticate(this.token);
   }
   del(...args) {
-    return super.del(...args).authenticate();
-  }
-
-  // Override request class
-  get RequestClass() {
-    return MyRequest;
-  }
-
-  // Override result class
-  get ResultClass() {
-    return MyResult;
+    return super.del(...args).authenticate(this.token);
   }
 }
 
-var pajax = new MyPajax({
-  authToken: 'foo'
+let token = 'foo';
+
+var pajax = new MyPajax(token, {
+  Request: MyRequest,
+  Response: MyResponse
 });
 
 pajax.get(url)
-     .authenticate() // Adds bearer token to request
+     .authenticate(token) // Adds bearer token to request
      .send()
      .then(res => {
        // res.isAuthenticated = true

@@ -17,21 +17,56 @@ jspm install github:n-fuse/pajax
 
 ```javascript
 import Pajax from 'pajax';
-var pajax = new Pajax();
+var pajax = new Pajax(opts);
 ```
 
-There are built-in methods for `get`, `post`, `put`, `patch`, `delete` and `head`
-
 ### Fetching data
+
+```javascript
+pajax.fetch(url, opts)
+     .send()
+     .then(res=>{
+       res.body: // the response from the server
+       res.ok:   // true
+     }, res=>{
+       // called only on network errors
+       res.ok;    // false
+       res.error; // the error
+     });
+```
+
+The returned promise will not reject any error status codes.
+Call checkStatus() after fetch() to do so.
+
+
+```javascript
+pajax.fetch(url, opts)
+     .checkStatus()
+     .send()
+     .then(res=>{
+       res.body: // the response from the server
+       res.ok:   // true
+     }, res=>{
+       // called on network and status errors
+       res.ok;    // false
+       res.error; // the error
+     });
+```
+
+There are built-in methods for `get`, `post`, `put`, `patch`, `del` and `head`.
+checkStatus() is automatically called when using them.
 
 ```javascript
 pajax.get(url, opts)
      .send()
      .then(res=>{
-        // res.body: the response from the server
-      }, res=>{
-        // called on network or status errors
-      });
+       res.body: // the response from the server
+       res.ok:   // true
+     }, res=>{
+       // called on network and status errors
+       res.ok;    // false
+       res.error; // the error
+     });
 ```
 
 ### Sending data
@@ -41,29 +76,34 @@ pajax.post(url, opts)
      .attach(body)
      .send()
      .then(res=>{
-       // res.body: the response from the server
+       res.body: // the response from the server
+       res.ok:   // true
+     }, res=>{
+       // called on network and status errors
+       res.ok;    // false
+       res.error; // the error
      });
 ```
 
 #### Parameters
 
 - url (string) - the absolute or relative URL for this request
-- opts (object) - set of key/value pairs to configure this ajax request
+- opts (object) - set of key/value pairs to configure the ajax requests
 - body (mixed) - the data to be sent
 
 #### Options (opts):
 
-- noCache (boolean) - Forces GET requests not to be cached by the browser, by adding a _={timestamp} parameter when set to true
+- method (string) - `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`
+- cache (string) - `default`, `no-cache` forces GET requests not to be cached by the browser, by adding a _={timestamp} parameter when set to true
 - queryParams (object) - set of key/value pairs that are added as parameters to the url
 - responseType (string) - the expected result type from the server. Request is always rejected, when the result does not match the expected type.
 - contentType (string) - the content type of the data sent to the server
-- headers (object)- set of key/value pairs that are added to the request header
+- headers (object) - set of key/value pairs that are added to the request header
 - progress (function) - callback for the the upload progress
 - timeout (integer) - number of milliseconds to wait for a response
-- withCredentials (boolean) - en/disables withCredentials
+- credentials (string) - `same-origin`, `include` Use `include` to send cookies in a CORS request.
 
-
-It is also possible to set the options by chaining methods in a request
+It is also possible to set options by chaining methods in a request before invoking send()
 
 ```javascript
 var pajax = new Pajax();
@@ -72,15 +112,15 @@ pajax.put('/url')
      .header('Accept-Language', 'en')   // header via key-value
      .query({'foo': 'bar'})             // query parameters via object
      .query('foo', 'bar')               // query parameter via key-value
-     .noCache()
-     .withCredentials()
-     .responseType('application/json')
-     .contentType('application/json')
-     .progress(req, event=>{
+     .noCache()                         // Sets cache to `no-cache`
+     .withCredentials()                 // Sets credentials to `include`
+     .setResponseType('application/json')  
+     .setContentType('application/json')
+     .onProgress(req, event=>{
        ...
      })
-     .timeout(5000)
-     .attach({ foo: 'bar' })
+     .setTimeout(5000)
+     .attach({ foo: 'bar' })          
      .send()
      .then(res=>{
        res.body; // the response from the server
@@ -93,7 +133,7 @@ Call the methods on the pajax instance to set the options for every request.
 
 ```javascript
 var pajax = new Pajax().header('Accept-Language', 'en').noCache();
-pajax.get().send().then(...);
+pajax.get(url).send().then(...);
 
 ```
 
@@ -136,7 +176,7 @@ var pajax = new Pajax().before(req=>{
        // do some stuff before a request is sent
      });
 
-pajax.get().send().then(...);
+pajax.get(url).send().then(...);
 
 ```
 
@@ -149,9 +189,9 @@ You can implement custom methods or override the existing ones.
 
 // Class for the request objects
 class MyRequest extends Pajax.Request {
-  authenticate(authToken) {
+  authenticate() {
     return this.before(req=>{
-      req.header('authorization', `Bearer ${authToken}`);
+      req.header('authorization', `Bearer ${req.auth.token}`);
     });
   }
 }
@@ -165,32 +205,30 @@ class MyResponse extends Pajax.Response {
 
 // Custom pajax class
 class MyPajax extends Pajax {
-
-  constructor(token, ...args) {
-    super(...args);
-    this.token = token;
-  }
   // Add token to put/post/del
   post(...args) {
-    return super.post(...args).authenticate(this.token);
+    return super.post(...args).authenticate();
   }
   put(...args) {
-    return super.put(...args).authenticate(this.token);
+    return super.put(...args).authenticate();
   }
   del(...args) {
-    return super.del(...args).authenticate(this.token);
+    return super.del(...args).authenticate();
   }
 }
 
-let token = 'foo';
+let auth = {token: 'foo'};
 
-var pajax = new MyPajax(token, {
-  Request: MyRequest,
-  Response: MyResponse
+var pajax = new MyPajax(token, opts, {
+  requestData: { // Adds additional stuff to the request instance
+    auth
+  },
+  Request: MyRequest,  // Overrides default Request class
+  Response: MyResponse // Overrides default Response class
 });
 
 pajax.get(url)
-     .authenticate(token) // Adds bearer token to request
+     .authenticate() // Adds bearer token to request
      .send()
      .then(res => {
        // res.isAuthenticated = true
@@ -220,7 +258,7 @@ pajax.get('/url/to/json').send().then(res=>{
 ```javascript
 // For url encoded requests
 var pajax = new Pajax.URLEncoded(opts);
-pajax.post('/url', {foo:'bar'}).send().then(response=>{
+pajax.post('/url', {foo:'bar'}).send().then(res=>{
   ...
 }, res=>{
   ...

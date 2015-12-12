@@ -44,7 +44,7 @@ describe('basic', function() {
   });
 
   it('should make request with base url', function(done) {
-    var pajax = new Pajax().baseURL(baseURL);
+    var pajax = new Pajax({baseURL});
     pajax.get('/ok')
          .send()
          .then(res => {
@@ -53,7 +53,7 @@ describe('basic', function() {
   });
 
   it('should reject request', function(done) {
-    var pajax = new Pajax().baseURL(baseURL);
+    var pajax = new Pajax({baseURL});
     pajax.get('/error')
          .send()
          .then(noCall)
@@ -72,7 +72,6 @@ describe('helpers', function() {
     assert.strictEqual(typeof Pajax.isURL, 'function');
     assert.strictEqual(typeof Pajax.parseURL, 'function');
     assert.strictEqual(typeof Pajax.clone, 'function');
-    assert.strictEqual(typeof Pajax.defaults, 'function');
     assert.strictEqual(typeof Pajax.merge, 'function');
 
     var parsedURL = Pajax.parseURL('http://www.foo.net/bar');
@@ -85,7 +84,7 @@ describe('helpers', function() {
 
 
 describe('advanced', function() {
-  var pajax = new Pajax().baseURL(baseURL);
+  var pajax = new Pajax({baseURL});
 
   it('should post data', function(done) {
     pajax.post('/data')
@@ -121,7 +120,11 @@ describe('advanced', function() {
          .query('woo', 3)
          .processedURL;
 
-    assert.strictEqual(url, 'http://127.0.0.1:3500/url?foo=1&bar=2&woo=3&me=4');
+    assert.isTrue(url.indexOf('foo=1')>-1);
+    assert.isTrue(url.indexOf('bar=2')>-1);
+    assert.isTrue(url.indexOf('woo=3')>-1);
+    assert.isTrue(url.indexOf('me=4')>-1);
+    assert.strictEqual(url.indexOf('http://127.0.0.1:3500/url?'),0);
   });
 
   it('should retry the request', function(done) {
@@ -156,7 +159,7 @@ describe('advanced', function() {
 
 
 describe('req hooks', function() {
-  var pajax = new Pajax().baseURL(baseURL);
+  var pajax = new Pajax({baseURL});
 
   it('should call the hooks', function(done) {
     pajax.get('/header')
@@ -189,8 +192,7 @@ describe('req hooks', function() {
 });
 
 describe('pajax hooks', function() {
-  var pajax = new Pajax()
-              .baseURL(baseURL)
+  var pajax = new Pajax({baseURL})
               .before(req=> {
                 req.header('Accept-Language', 'foo');
               })
@@ -227,7 +229,7 @@ describe('pajax hooks', function() {
 
 describe('json', function() {
   describe('basic', function() {
-    var pajax = new Pajax().baseURL(baseURL);
+    var pajax = new Pajax({baseURL});
 
     it('should get parsed json via serializer', function(done) {
       pajax.get('/json')
@@ -239,7 +241,7 @@ describe('json', function() {
 
     it('should get parsed json via response type. Not working in some (older) Browsers.', function(done) {
       pajax.get('/json')
-           .responseType('json')
+           .setResponseType('json')
            .send()
            .then(res => {
              assert.deepEqual(res.body, {foo: 'bar'});
@@ -266,7 +268,7 @@ describe('json', function() {
   });
 
   describe('Pajax.JSON', function() {
-    var pajax = new Pajax.JSON({forceJSON: true}).baseURL(baseURL);
+    var pajax = new Pajax.JSON({baseURL, forceJSON: true});
     it('should get parsed json', function(done) {
       // JSON as contentType text
       pajax.get('/jsontext')
@@ -304,7 +306,7 @@ describe('json', function() {
            }).then(done, done);
     });
 
-    var pajax2 = new Pajax.JSON({forceJSON: false}).baseURL(baseURL);
+    var pajax2 = new Pajax.JSON({baseURL, forceJSON: false});
     it('should get invalid json as text', function(done) {
       pajax2.get('/ok')
            .send()
@@ -321,17 +323,14 @@ describe('Extending requests/responses', function() {
     token: 'foo'
   };
 
-  var pajax = new Pajax({
-    request: {
+  var pajax = new Pajax({baseURL}, {
+    requestData: {
       auth,
       authenticate(salt) {
         return this.before(req=> {
           req.header('authorization', `Bearer ${req.auth.token} ${salt}`);
         });
       }
-    },
-    opts: {
-      baseURL
     }
   });
 
@@ -378,12 +377,9 @@ describe('Overriding request/response classes', function() {
     }
   }
 
-  var pajax = new MyPajax({
+  var pajax = new MyPajax({baseURL}, {
     Response: MyResponse,
-    Request: MyRequest,
-    opts: {
-      baseURL
-    }
+    Request: MyRequest
   });
 
   it('should send and receive the authToken', function(done) {

@@ -3,7 +3,7 @@
 [![Build Status](http://img.shields.io/travis/n-fuse/pajax.svg?style=flat)](https://travis-ci.org/n-fuse/pajax)
 
 pajax is a library for promise based XHR request.
-It has similarities with the upcoming [Fetch](https://fetch.spec.whatwg.org/) standard.
+It has similarities to the upcoming [Fetch](https://fetch.spec.whatwg.org/) standard.
 
 ## Installation
 
@@ -11,20 +11,15 @@ It has similarities with the upcoming [Fetch](https://fetch.spec.whatwg.org/) st
 jspm install github:n-fuse/pajax
 ```
 
-## Usage
 
-### Create an instance
+## Quick start
+
+### Fetching data via fetch()
 
 ```javascript
 import Pajax from 'pajax';
-var pajax = new Pajax(opts);
-```
 
-### Fetching data
-
-```javascript
-pajax.fetch(url, opts)
-     .send()
+Pajax.fetch(url, opts)
      .then(res=>{
        res.body: // the response from the server
        res.ok:   // true
@@ -35,30 +30,15 @@ pajax.fetch(url, opts)
      });
 ```
 
-The returned promise will not reject any error status codes.
-Call checkStatus() after fetch() to do so.
-
+### Fetching data via get()
 
 ```javascript
-pajax.fetch(url, opts)
-     .checkStatus()
-     .send()
-     .then(res=>{
-       res.body: // the response from the server
-       res.ok:   // true
-     }, res=>{
-       // called on network and status errors
-       res.ok;    // false
-       res.error; // the error
-     });
-```
+import Pajax from 'pajax';
+var pajax = new Pajax(opts);
 
-There are built-in methods for `get`, `post`, `put`, `patch`, `del` and `head`.
-checkStatus() is automatically called when using them.
-
-```javascript
 pajax.get(url, opts)
-     .send()
+     .noCache() // See 'Configuring pajax/request instances'
+     .fetch()
      .then(res=>{
        res.body: // the response from the server
        res.ok:   // true
@@ -74,7 +54,7 @@ pajax.get(url, opts)
 ```javascript
 pajax.post(url, opts)
      .attach(body)
-     .send()
+     .fetch()
      .then(res=>{
        res.body: // the response from the server
        res.ok:   // true
@@ -91,22 +71,125 @@ pajax.post(url, opts)
 - opts (object) - set of key/value pairs to configure the ajax requests
 - body (mixed) - the data to be sent
 
-#### Options (opts):
+## Usage
+
+### Fetching data
+
+The basic fetch() is similar to the standard [Fetch](https://fetch.spec.whatwg.org/) specification
+
+```javascript
+import Pajax from 'pajax';
+
+Pajax.fetch(url, opts)
+     .then(res=>{
+       res.body: // the response from the server
+       res.ok:   // true
+     }, res=>{
+       // called only on network errors
+       res.ok;    // false
+       res.error; // the error
+     });
+```
+
+The returned promise will not reject any error status codes.
+Call Pajax.checkStatus() after fetch() to do so.
+
+```javascript
+pajax.fetch(url, opts)
+     .then(Pajax.checkStatus())
+     .then(res=>{
+       res.body: // the response from the server
+       res.ok:   // true
+     }, res=>{
+       // called on network and status errors
+       res.ok;    // false
+       res.error; // the error
+     });
+```
+
+### Create a pajax instance
+
+Creating an instance allows to modify the default options off fetch() requests.
+
+```javascript
+import Pajax from 'pajax';
+var pajax = new Pajax(opts);
+pajax.fetch(...);
+```
+
+### Options
+
+Most options are very similar to the [Fetch](https://fetch.spec.whatwg.org/) options.
 
 - method (string) - `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`
-- cache (string) - `default`, `no-cache` forces GET requests not to be cached by the browser, by adding a _={timestamp} parameter when set to true
+- cache (string) - `default`, `no-cache` - Use `no-cache` to avoid caching by adding a _={timestamp} query parameter
 - queryParams (object) - set of key/value pairs that are added as parameters to the url
-- responseType (string) - the expected result type from the server. Request is always rejected, when the result does not match the expected type.
+- responseType (string) - the expected result type from the server. Request is always rejected, when the response body does not match the expected type.
 - contentType (string) - the content type of the data sent to the server
 - headers (object) - set of key/value pairs that are added to the request header
 - progress (function) - callback for the the upload progress
 - timeout (integer) - number of milliseconds to wait for a response
-- credentials (string) - `same-origin`, `include` Use `include` to send cookies in a CORS request.
+- credentials (string) - `same-origin`, `include` - Use `include` to send cookies in a CORS request.
+- baseURL (string) - base for requests with relative urls
 
-It is also possible to set options by chaining methods in a request before invoking send()
+### Requests
+
+A Request instance represents a request to a specific resource and can be provided as a fetch() argument.
+The constructor has the same signature as the fetch method.
 
 ```javascript
-var pajax = new Pajax();
+var req = new Pajax.Request(url, opts);
+pajax.fetch(req).then(...);
+```
+
+Request objects can also be created with the request() method on a pajax instance.
+They inherit the default options of the pajax instance.
+
+```javascript
+var pajax = new Pajax(opts1);
+// Merges opts1 with opts2 in request
+var req = pajax.request(url, opts2);
+pajax.fetch(req).then(...);
+```
+
+There are helper methods to create requests for common HTTP methods:
+`get`, `post`, `put`, `patch`, `del` and `head`.
+checkStatus() is automatically called when using them.
+
+```javascript
+var req = pajax.post(url, opts);
+pajax.fetch(req)
+     .then(res=>{
+       res.body: // the response from the server
+       res.ok:   // true
+     }, res=>{
+       // called on network and status errors
+       res.ok;    // false
+       res.error; // the error
+     });
+```
+
+A request has also a fetch() method when created by a pajax instance.
+
+```javascript
+pajax.post(url, opts);
+     .fetch()
+     .then(res=>{
+       res.body: // the response from the server
+       res.ok:   // true
+     }, res=>{
+       // called on network and status errors
+       res.ok;    // false
+       res.error; // the error
+     });
+```
+
+
+### Configuring pajax/request instances
+
+It is also possible to set options by chaining methods in a request before invoking fetch()
+
+```javascript
 pajax.put('/url')
      .header({'Accept-Language': 'en'}) // headers via object
      .header('Accept-Language', 'en')   // header via key-value
@@ -120,20 +203,20 @@ pajax.put('/url')
        ...
      })
      .setTimeout(5000)
-     .attach({ foo: 'bar' })          
-     .send()
-     .then(res=>{
-       res.body; // the response from the server
-     }, res=>{
-       res.error; // the error
-     });
+     .attach({ foo: 'bar' })
+     .fetch()
+     .then(...);
+
 ```
 
 Call the methods on the pajax instance to set the options for every request.
 
 ```javascript
-var pajax = new Pajax().header('Accept-Language', 'en').noCache();
-pajax.get(url).send().then(...);
+var pajax = new Pajax()
+            .header('Accept-Language', 'en')
+            .noCache();
+
+pajax.get(url).fetch().then(...);
 
 ```
 
@@ -163,7 +246,7 @@ pajax.get(url)
        res; // response object
        // do some stuff after a failed request
      })
-     .send() // send request
+     .fetch() // send request
      .then(res=>{
        // res.body: the response from the server
      });
@@ -176,14 +259,14 @@ var pajax = new Pajax().before(req=>{
        // do some stuff before a request is sent
      });
 
-pajax.get(url).send().then(...);
+pajax.get(url).fetch().then(...);
 
 ```
 
-## The Pajax/Request/Response Class
+## Modifying the Pajax/Request/Response Class
 
-The Pajax class serves as a factory for request class instances.
-You can implement custom methods or override the existing ones.
+You can easily extend the Pajax, Request and Response Class to implement custom methods
+or override the existing ones.
 
 ```javascript
 
@@ -191,7 +274,7 @@ You can implement custom methods or override the existing ones.
 class MyRequest extends Pajax.Request {
   authenticate() {
     return this.before(req=>{
-      req.header('authorization', `Bearer ${req.auth.token}`);
+      req.header('authorization', `Bearer ${req.data.auth.token}`);
     });
   }
 }
@@ -229,7 +312,7 @@ var pajax = new MyPajax(token, opts, {
 
 pajax.get(url)
      .authenticate() // Adds bearer token to request
-     .send()
+     .fetch()
      .then(res => {
        // res.isAuthenticated = true
        // res.isJSON = true/false
@@ -237,7 +320,7 @@ pajax.get(url)
 
 // bearer token is added by Pajax class
 pajax.post(url)
-     .send()
+     .fetch()
      .then(res => {
        // res.isAuthenticated = true
        // res.isJSON = true/false
@@ -248,7 +331,7 @@ There are also some predefined classes:
 ```javascript
 // For jsons
 var pajax = new Pajax.JSON(opts);
-pajax.get('/url/to/json').send().then(res=>{
+pajax.get('/url/to/json').fetch().then(res=>{
   res.body; /// js object
 }, res=>{
   ...
@@ -258,7 +341,7 @@ pajax.get('/url/to/json').send().then(res=>{
 ```javascript
 // For url encoded requests
 var pajax = new Pajax.URLEncoded(opts);
-pajax.post('/url', {foo:'bar'}).send().then(res=>{
+pajax.post('/url', {foo:'bar'}).fetch().then(res=>{
   ...
 }, res=>{
   ...

@@ -1,9 +1,10 @@
 {
   "name": "pajax",
-  "description": "Promise based ajax library",
+  "description": "Promise based ajax/fetch library",
   "version": "0.4.0",
   "keywords": [
     "ajax",
+    "fetch",
     "xhr",
     "promise"
   ],
@@ -14,9 +15,7 @@
     "url": "www.n-fuse.de"
   },
   "contributors": [],
-  "license": {
-    "type": "MIT"
-  },
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git://github.com/n-fuse/pajax"

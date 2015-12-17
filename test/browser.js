@@ -13,30 +13,79 @@ function noCall(res) {
   assert.fail('Should not be called');
 }
 
-describe('static', function() {
-  it('should make request', function(done) {
-
-    assert.strictEqual(Pajax.get('/url').opts.method, 'GET');
-    assert.strictEqual(Pajax.head('/url').opts.method, 'HEAD');
-    assert.strictEqual(Pajax.post('/url').opts.method, 'POST');
-    assert.strictEqual(Pajax.put('/url').opts.method, 'PUT');
-    assert.strictEqual(Pajax.del('/url').opts.method, 'DELETE');
-
-    Pajax.get('http://127.0.0.1:3500/ok')
-         .send()
+describe('static fetch', function() {
+  it('should fetch ok', function(done) {
+    Pajax.fetch('http://127.0.0.1:3500/ok')
          .then(res => {
            assert.strictEqual(res.status, 200);
            assert.strictEqual(res.body, 'ok');
          }, noCall).then(done, done);
   });
+
+  it('should fetch error', function(done) {
+    Pajax.fetch('http://127.0.0.1:3500/error')
+         .then(res => {
+           assert.strictEqual(res.status, 500);
+           assert.strictEqual(res.body, 'error');
+           assert.strictEqual(res.statusText, 'Internal Server Error');
+         }, noCall).then(done, done);
+  });
+
+  it('should fetch error and checkStatus', function(done) {
+    Pajax.fetch('http://127.0.0.1:3500/error')
+         .then(Pajax.checkStatus())
+         .then(noCall, res => {
+           assert.strictEqual(res.status, 500);
+           assert.strictEqual(res.body, 'error');
+           assert.strictEqual(res.statusText, 'Internal Server Error');
+         }).then(done, done);
+  });
 });
 
-describe('basic', function() {
+describe('config', function() {
+  it('should set configuration', function() {
+
+    assert.strictEqual(Pajax.get('/url').method, 'GET');
+    assert.strictEqual(Pajax.head('/url').method, 'HEAD');
+    assert.strictEqual(Pajax.post('/url').method, 'POST');
+    assert.strictEqual(Pajax.put('/url').method, 'PUT');
+    assert.strictEqual(Pajax.patch('/url').method, 'PATCH');
+    assert.strictEqual(Pajax.delete('/url').method, 'DELETE');
+
+    let prcb = (req, event)=>{};
+
+    var req = Pajax.patch('/url')
+                   .header({'foo': 'bar'})
+                   .header('bar', 'foo')
+                   .query({'foo': 'bar'})
+                   .query('bar', 'foo')
+                   .noCache()
+                   .withCredentials()
+                   .setResponseType('application/json')
+                   .setContentType('application/json')
+                   .onProgress(prcb)
+                   .setTimeout(5000)
+                   .attach({foo:'bar'});
+
+    assert.strictEqual(req.method, 'PATCH');
+    assert.deepEqual(req.headers, { 'foo': 'bar', 'bar': 'foo' });
+    assert.deepEqual(req.queryParams, { 'foo': 'bar', 'bar': 'foo' });
+    assert.strictEqual(req.cache, 'no-cache');
+    assert.strictEqual(req.credentials, 'include');
+    assert.strictEqual(req.responseType, 'application/json');
+    assert.strictEqual(req.contentType, 'application/json');
+    assert.strictEqual(req.progress, prcb);
+    assert.strictEqual(req.timeout, 5000);
+    assert.deepEqual(req.body, {foo:'bar'});
+  });
+});
+
+describe('instance', function() {
 
   it('should make request', function(done) {
     var pajax = new Pajax();
     pajax.get('http://127.0.0.1:3500/ok')
-         .send()
+         .fetch()
          .then(res => {
            assert.strictEqual(res.status, 200);
            assert.strictEqual(res.body, 'ok');
@@ -46,7 +95,7 @@ describe('basic', function() {
   it('should make request with base url', function(done) {
     var pajax = new Pajax({baseURL});
     pajax.get('/ok')
-         .send()
+         .fetch()
          .then(res => {
            assert.strictEqual(res.body, 'ok');
          }, noCall).then(done, done);
@@ -55,9 +104,8 @@ describe('basic', function() {
   it('should reject request', function(done) {
     var pajax = new Pajax({baseURL});
     pajax.get('/error')
-         .send()
-         .then(noCall)
-         .catch(res => {
+         .fetch()
+         .then(noCall, res => {
            assert.strictEqual(res.status, 500);
            assert.strictEqual(res.body, 'error');
            assert.strictEqual(res.statusText, 'Internal Server Error');
@@ -89,7 +137,7 @@ describe('advanced', function() {
   it('should post data', function(done) {
     pajax.post('/data')
          .attach('foo')
-         .send()
+         .fetch()
          .then(res => {
            assert.strictEqual(res.body, 'POST: foo');
          }, noCall).then(done, done);
@@ -97,7 +145,7 @@ describe('advanced', function() {
 
   it('should receive the response headers', function(done) {
     pajax.get('/header')
-         .send()
+         .fetch()
          .then(res => {
            assert.strictEqual(res.headers['content-type'], 'text/html; charset=utf-8');
            assert.strictEqual(res.contentType, 'text/html');
@@ -107,7 +155,7 @@ describe('advanced', function() {
   it('should send the headers', function(done) {
     pajax.get('/header')
          .header('Accept-Language', 'foo')
-         .send()
+         .fetch()
          .then(res => {
            assert.strictEqual(res.body, 'accept-language: foo');
          }, noCall).then(done, done);
@@ -115,25 +163,24 @@ describe('advanced', function() {
 
   it('should add query params to url', function() {
     var url = pajax.get('/url?foo=0&me=4')
-         .query({foo: 1}) // overrides foo=0
-         .query({bar: 2}) // merges bar=2
-         .query('woo', 3)
-         .processedURL;
+                   .query({foo: 1}) // overrides foo=0
+                   .query({bar: 2}) // merges bar=2
+                   .query('woo', 3) // merges woo=3
+                   .processedURL;
 
     assert.isTrue(url.indexOf('foo=1')>-1);
     assert.isTrue(url.indexOf('bar=2')>-1);
     assert.isTrue(url.indexOf('woo=3')>-1);
     assert.isTrue(url.indexOf('me=4')>-1);
-    assert.strictEqual(url.indexOf('http://127.0.0.1:3500/url?'),0);
   });
 
   it('should retry the request', function(done) {
 
     function retry(req, cb) {
-      return req.send().catch(res=> {
+      return pajax.fetch(req).catch(res=> {
         return cb(res).then(doRetry=> {
           if (doRetry) {
-            return retry(res.request, cb);
+            return retry(req, cb);
           } else {
             return Promise.reject(res);
           }
@@ -164,7 +211,7 @@ describe('req hooks', function() {
   it('should call the hooks', function(done) {
     pajax.get('/header')
          .before(req=> {
-           req.header('Accept-Language', 'foo');
+           req.headers['Accept-Language'] = 'foo';
          })
          .after(res=> {
            res.decoration = 'flowers';
@@ -172,7 +219,7 @@ describe('req hooks', function() {
          .afterSuccess(res=> {
            res.body = res.body.replace('foo', 'bar');
          })
-         .send()
+         .fetch()
          .then(res => {
            assert.strictEqual(res.body, 'accept-language: bar');
            assert.strictEqual(res.decoration, 'flowers');
@@ -184,7 +231,7 @@ describe('req hooks', function() {
     .afterFailure(res=> {
       res.error = res.error.replace('Internal ', '');
     })
-    .send()
+    .fetch()
     .catch(res => {
       assert.strictEqual(res.error, 'Server Error');
     }, noCall).then(done, done);
@@ -194,7 +241,7 @@ describe('req hooks', function() {
 describe('pajax hooks', function() {
   var pajax = new Pajax({baseURL})
               .before(req=> {
-                req.header('Accept-Language', 'foo');
+                req.headers['Accept-Language'] = 'foo';
               })
               .after(res=> {
                 res.decoration = 'flowers';
@@ -208,7 +255,7 @@ describe('pajax hooks', function() {
 
   it('should call the hooks', function(done) {
     pajax.get('/header')
-         .send()
+         .fetch()
          .then(res => {
            assert.strictEqual(res.body, 'accept-language: bar');
            assert.strictEqual(res.decoration, 'flowers');
@@ -217,7 +264,7 @@ describe('pajax hooks', function() {
 
   it('should call the hooks 2', function(done) {
     pajax.get('/error')
-         .send()
+         .fetch()
          .catch(res => {
            assert.strictEqual(res.error, 'Server Error');
     }, noCall).then(done, done);
@@ -233,7 +280,7 @@ describe('json', function() {
 
     it('should get parsed json via serializer', function(done) {
       pajax.get('/json')
-           .send()
+           .fetch()
            .then(res => {
              assert.deepEqual(res.body, {foo: 'bar'});
            }, noCall).then(done, done);
@@ -242,7 +289,7 @@ describe('json', function() {
     it('should get parsed json via response type. Not working in some (older) Browsers.', function(done) {
       pajax.get('/json')
            .setResponseType('json')
-           .send()
+           .fetch()
            .then(res => {
              assert.deepEqual(res.body, {foo: 'bar'});
            }, noCall).then(done, done);
@@ -251,7 +298,7 @@ describe('json', function() {
     it('should get json as text', function(done) {
       pajax.get('/json')
            .asText()
-           .send()
+           .fetch()
            .then(res => {
              assert.strictEqual(res.body, '{"foo":"bar"}');
            }, noCall).then(done, done);
@@ -260,7 +307,7 @@ describe('json', function() {
     it('should convert data to json object as fallback', function(done) {
       pajax.post('/json')
            .attach({post: 'json'})
-           .send()
+           .fetch()
            .then(res => {
              assert.deepEqual(res.body, {post: 'json'});
            }, noCall).then(done, done);
@@ -272,7 +319,7 @@ describe('json', function() {
     it('should get parsed json', function(done) {
       // JSON as contentType text
       pajax.get('/jsontext')
-           .send()
+           .fetch()
            .then(res => {
              assert.deepEqual(res.body, {'foo': 'bar'});
            }, noCall).then(done, done);
@@ -281,7 +328,7 @@ describe('json', function() {
     it('should post json object', function(done) {
       pajax.post('/json')
            .attach({post: 'json'})
-           .send()
+           .fetch()
            .then(res => {
              assert.deepEqual(res.body, {'post': 'json'});
            }, noCall).then(done, done);
@@ -291,7 +338,7 @@ describe('json', function() {
       // Force
       pajax.get('/json')
            .asText()
-           .send()
+           .fetch()
            .then(res => {
              assert.strictEqual(res.body, '{"foo":"bar"}');
            }, noCall).then(done, done);
@@ -299,7 +346,7 @@ describe('json', function() {
 
     it('should reject invalid json', function(done) {
       pajax.get('/ok')
-           .send()
+           .fetch()
            .then(noCall, res => {
              assert.strictEqual(res.error, 'Invalid response');
              assert.strictEqual(res.body, 'ok');
@@ -309,50 +356,25 @@ describe('json', function() {
     var pajax2 = new Pajax.JSON({baseURL, forceJSON: false});
     it('should get invalid json as text', function(done) {
       pajax2.get('/ok')
-           .send()
-           .then(res => {
-             assert.strictEqual(res.body, 'ok');
-           }, noCall).then(done, done);
+            .fetch()
+            .then(res => {
+              assert.strictEqual(res.body, 'ok');
+            }, noCall).then(done, done);
     });
 
   });
 });
 
-describe('Extending requests/responses', function() {
+describe('Overriding request/response classes', function() {
+
   let auth = {
     token: 'foo'
   };
 
-  var pajax = new Pajax({baseURL}, {
-    requestData: {
-      auth,
-      authenticate(salt) {
-        return this.before(req=> {
-          req.header('authorization', `Bearer ${req.auth.token} ${salt}`);
-        });
-      }
-    }
-  });
-
-  it('should send and receive the authToken', function(done) {
-    pajax.get('/headerecho')
-         .authenticate('salt')
-         .send()
-         .then(res => {
-           assert.strictEqual(res.body.authorization, 'Bearer foo salt');
-         }, noCall).then(done, done);
-  });
-});
-
-
-describe('Overriding request/response classes', function() {
-
-  let authToken = 'foo';
-
   class MyRequest extends Pajax.Request {
     authenticate(salt) {
       return this.before(req=> {
-        req.header('authorization', `Bearer ${authToken} ${salt}`);
+        req.header('authorization', `Bearer ${req.data.auth.token} ${salt}`);
       });
     }
   }
@@ -365,8 +387,9 @@ describe('Overriding request/response classes', function() {
 
   class MyPajax extends Pajax {
     validateToken() {
-      return this.get('/headerecho').authenticate('pepper')
-                 .send()
+      return this.get('/headerecho')
+                 .authenticate('pepper')
+                 .fetch()
                  .then(res=>{
                    return res.body.authorization==='Bearer foo pepper';
                  });
@@ -379,13 +402,16 @@ describe('Overriding request/response classes', function() {
 
   var pajax = new MyPajax({baseURL}, {
     Response: MyResponse,
-    Request: MyRequest
+    Request: MyRequest,
+    requestData: {
+      auth
+    }
   });
 
   it('should send and receive the authToken', function(done) {
     pajax.get('/headerecho')
          .authenticate('salt')
-         .send()
+         .fetch()
          .then(res => {
            assert.strictEqual(res.isAuthenticated, true);
            assert.strictEqual(res.body.authorization, 'Bearer foo salt');
@@ -401,7 +427,7 @@ describe('Overriding request/response classes', function() {
 
   it('should use send and receive the authToken 2', function(done) {
     pajax.post('/headerecho')
-         .send()
+         .fetch()
          .then(res => {
            assert.strictEqual(res.isAuthenticated, true);
            assert.strictEqual(res.body.authorization, 'Bearer foo pepper');

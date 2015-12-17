@@ -302,7 +302,7 @@ class MyPajax extends Pajax {
 
 let auth = {token: 'foo'};
 
-var pajax = new MyPajax(token, opts, {
+var pajax = new MyPajax(opts, {
   requestData: { // Adds additional stuff to the request instance
     auth
   },

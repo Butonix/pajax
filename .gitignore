@@ -1,9 +1,10 @@
-.jshintrc
 jspm_packages
 node_modules
-server/server.pid
+npm-debug.log
 
 coverage/
+
+server/server.pid
 
 .project
 .settings

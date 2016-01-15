@@ -34,9 +34,8 @@ Pajax.fetch(url, opts)
 
 ```javascript
 import Pajax from 'pajax';
-var pajax = new Pajax(opts);
 
-pajax.get(url, opts)
+Pajax.get(url, opts)
      .noCache() // See 'Configuring pajax/request instances'
      .fetch()
      .then(res=>{
@@ -52,7 +51,9 @@ pajax.get(url, opts)
 ### Sending data
 
 ```javascript
-pajax.post(url, opts)
+import Pajax from 'pajax';
+
+Pajax.post(url, opts)
      .attach(body)
      .fetch()
      .then(res=>{
@@ -95,7 +96,7 @@ The returned promise will not reject any error status codes.
 Call Pajax.checkStatus() after fetch() to do so.
 
 ```javascript
-pajax.fetch(url, opts)
+Pajax.fetch(url, opts)
      .then(Pajax.checkStatus())
      .then(res=>{
        res.body: // the response from the server
@@ -169,19 +170,15 @@ pajax.fetch(req)
      });
 ```
 
-A request has also a fetch() method when created by a pajax instance.
+Instead of calling pajax.fetch(request) you can call fetch directly on a request
+without an argument.
 
 ```javascript
-pajax.post(url, opts);
-     .fetch()
-     .then(res=>{
-       res.body: // the response from the server
-       res.ok:   // true
-     }, res=>{
-       // called on network and status errors
-       res.ok;    // false
-       res.error; // the error
-     });
+pajax.fetch(pajax.post(url, opts)).then(...);
+// is the same as
+pajax.post(url, opts).fetch().then(...);
+
+
 ```
 
 

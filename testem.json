@@ -14,7 +14,6 @@
   "phantomjs_args": [
     "--ignore-ssl-errors=true"
   ],
-  "on_start": "./server/start.sh",
   "before_tests": "jspm bundle-sfx tests/tests bundle.tmp.js",
-  "on_exit": "rm bundle.tmp.js bundle.tmp.js.map && ./server/stop.sh"
+  "on_exit": "rm bundle.tmp.js bundle.tmp.js.map"
 }

@@ -1,9 +1,20 @@
 {
-  "src_files": [
-    "test/**/*.js"
+  "serve_files": [
+    "node_modules/phantomjs-polyfill/bind-polyfill.js",
+    "bundle.tmp.js"
   ],
-  "test_page": "test-runner.mustache",
+  "src_files": [
+    "test/**/*.js",
+    "lib/**/*.js"
+  ],
+  "framework": "mocha+chai",
   "launch_in_ci": [
     "PhantomJS"
-  ]
+  ],
+  "phantomjs_args": [
+    "--ignore-ssl-errors=true"
+  ],
+  "on_start": "./server/start.sh",
+  "before_tests": "jspm bundle-sfx tests/tests bundle.tmp.js",
+  "on_exit": "rm bundle.tmp.js bundle.tmp.js.map && ./server/stop.sh"
 }

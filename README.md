@@ -123,8 +123,8 @@ pajax.fetch(...);
 Most options are very similar to the [Fetch](https://fetch.spec.whatwg.org/) options.
 
 - method (string) - `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`
-- cache (string) - `default`, `no-cache` - Use `no-cache` to avoid caching by adding a _={timestamp} query parameter
-- queryParams (object) - set of key/value pairs that are added as parameters to the url
+- cache (string) - `default`, `no-cache` - `no-cache` will add a _={timestamp} query parameter to avoid caching
+- queryParams (object) - set of key/value pairs that are added as query parameters to the url
 - responseType (string) - the expected result type from the server. Request is always rejected, when the response body does not match the expected type.
 - contentType (string) - the content type of the data sent to the server
 - headers (object) - set of key/value pairs that are added to the request header
@@ -154,7 +154,7 @@ pajax.fetch(req).then(...);
 ```
 
 There are helper methods to create requests for common HTTP methods:
-`get`, `post`, `put`, `patch`, `del` and `head`.
+`get`, `post`, `put`, `patch`, `delete` and `head`.
 checkStatus() is automatically called when using them.
 
 ```javascript
@@ -170,17 +170,14 @@ pajax.fetch(req)
      });
 ```
 
-Instead of calling pajax.fetch(request) you can call fetch directly on a request
+Instead of calling `pajax.fetch(request)` you can call fetch directly on a request
 without an argument.
 
 ```javascript
 pajax.fetch(pajax.post(url, opts)).then(...);
 // is the same as
 pajax.post(url, opts).fetch().then(...);
-
-
 ```
-
 
 ### Configuring pajax/request instances
 

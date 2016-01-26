@@ -13,6 +13,7 @@ describe('config', function() {
     let prcb = (req, event)=>{};
 
     var req = Pajax.patch('/url')
+                   .setBaseURL('http://foo')
                    .header({'foo': 'bar'})
                    .header('bar', 'foo')
                    .query({'foo': 'bar'})
@@ -28,6 +29,7 @@ describe('config', function() {
     assert.strictEqual(req.method, 'PATCH');
     assert.deepEqual(req.headers, { 'foo': 'bar', 'bar': 'foo' });
     assert.deepEqual(req.queryParams, { 'foo': 'bar', 'bar': 'foo' });
+    assert.strictEqual(req.baseURL, 'http://foo');
     assert.strictEqual(req.cache, 'no-cache');
     assert.strictEqual(req.credentials, 'include');
     assert.strictEqual(req.responseType, 'application/json');

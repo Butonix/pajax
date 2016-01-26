@@ -263,61 +263,69 @@ You can easily extend the Pajax, Request and Response Class to implement custom 
 or override the existing ones.
 
 ```javascript
+// Our external authenticator
+let auth = {token: 'g54gsfdgw34qj*9764w3'};
 
 // Class for the request objects
 class MyRequest extends Pajax.Request {
+  constructor(auth, ...args) {
+    super(...args);
+    // Store the auth object on the request
+    this.auth = auth;
+  }
+  // Adds the token to the request header
   authenticate() {
-    return this.before(req=>{
-      req.header('authorization', `Bearer ${req.data.auth.token}`);
+    return this.before(req=> {
+      req.header('authorization', `Bearer ${req.auth.token}`);
     });
   }
 }
 
-// Class for the result objects
 class MyResponse extends Pajax.Response {
-  get isJSON() {
-    return typeof this.body==='object';
+  // Checks if we are authenticated
+  get authenticated() {
+    return this.headers['X-authentication-level'] > 0;
   }
 }
 
 // Custom pajax class
 class MyPajax extends Pajax {
-  // Add token to put/post/del
-  post(...args) {
+  // extend ctor
+  constructor(auth, ...args) {
+    super(...args);
+    this.auth = auth;
+  }
+
+  // All delete requests should be authenticated
+  delete(...args) {
     return super.post(...args).authenticate();
   }
-  put(...args) {
-    return super.put(...args).authenticate();
+
+  // Use our custom Request class
+  createRequest(...args) {
+    return new MyRequest(this.auth, ...args);
   }
-  del(...args) {
-    return super.del(...args).authenticate();
+
+  // Use our custom Response class
+  createResponse(...args) {
+    return new MyResponse(...args);
   }
 }
 
-let auth = {token: 'foo'};
-
-var pajax = new MyPajax(opts, {
-  requestData: { // Adds additional stuff to the request instance
-    auth
-  },
-  Request: MyRequest,  // Overrides default Request class
-  Response: MyResponse // Overrides default Response class
-});
+var pajax = new MyPajax(auth, opts);
 
 pajax.get(url)
      .authenticate() // Adds bearer token to request
      .fetch()
      .then(res => {
-       // res.isAuthenticated = true
-       // res.isJSON = true/false
+       // res.authenticated = true
      });
 
 // bearer token is added by Pajax class
 pajax.post(url)
      .fetch()
      .then(res => {
-       // res.isAuthenticated = true
-       // res.isJSON = true/false
+       // res.authenticated = true
      });     
 ```
 There are also some predefined classes:

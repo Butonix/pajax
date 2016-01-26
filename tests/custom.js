@@ -1,13 +1,17 @@
 import {Pajax,assert,noCall,baseURL} from './utils';
 
 let auth = {
-  token: 'foo'
+  token: 'salt'
 };
 
 class MyRequest extends Pajax.Request {
-  authenticate(salt) {
+  constructor(auth, ...args) {
+    super(...args);
+    this.auth = auth;
+  }
+  authenticate(token2) {
     return this.before(req=> {
-      req.header('authorization', `Bearer ${req.data.auth.token} ${salt}`);
+      req.header('authorization', `Bearer ${req.auth.token} ${token2}`);
     });
   }
 }
@@ -19,35 +23,43 @@ class MyResponse extends Pajax.Response {
 }
 
 class MyPajax extends Pajax {
+
+  constructor(auth, ...args) {
+    super(...args);
+    this.auth = auth;
+  }
+
   validateToken() {
     return this.get('/headerecho')
-               .authenticate('pepper')
+               .authenticate('rosemary')
                .fetch()
                .then(res=>{
-                 return res.body.authorization==='Bearer foo pepper';
+                 return res.body.authorization==='Bearer salt rosemary';
                });
   }
 
   post(...args) {
     return super.post(...args).authenticate('pepper');
   }
+
+  createRequest(...args) {
+    return new MyRequest(this.auth, ...args);
+  }
+
+  createResponse(...args) {
+    return new MyResponse(...args);
+  }
 }
 
-var pajax = new MyPajax({baseURL}, {
-  Response: MyResponse,
-  Request: MyRequest,
-  requestData: {
-    auth
-  }
-});
+var pajax = new MyPajax(auth, {baseURL});
 
 it('should send and receive the authToken', function(done) {
   pajax.get('/headerecho')
-       .authenticate('salt')
+       .authenticate('cinnamon')
        .fetch()
        .then(res => {
          assert.strictEqual(res.isAuthenticated, true);
-         assert.strictEqual(res.body.authorization, 'Bearer foo salt');
+         assert.strictEqual(res.body.authorization, 'Bearer salt cinnamon');
        }, noCall).then(done, done);
 });
 
@@ -63,6 +75,6 @@ it('should use send and receive the authToken 2', function(done) {
        .fetch()
        .then(res => {
          assert.strictEqual(res.isAuthenticated, true);
-         assert.strictEqual(res.body.authorization, 'Bearer foo pepper');
+         assert.strictEqual(res.body.authorization, 'Bearer salt pepper');
        }, noCall).then(done, done);
 });

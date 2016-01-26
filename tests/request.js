@@ -68,7 +68,7 @@ describe('advanced', function() {
                    .query({foo: 1}) // overrides foo=0
                    .query({bar: 2}) // merges bar=2
                    .query('woo', 3) // merges woo=3
-                   .processedURL;
+                   .url;
 
     assert.isTrue(url.indexOf('foo=1')>-1);
     assert.isTrue(url.indexOf('bar=2')>-1);

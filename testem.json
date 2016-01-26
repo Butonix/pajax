@@ -4,7 +4,7 @@
     "bundle.tmp.js"
   ],
   "src_files": [
-    "test/**/*.js",
+    "tests/**/*.js",
     "lib/**/*.js"
   ],
   "framework": "mocha+chai",

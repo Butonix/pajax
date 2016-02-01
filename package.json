@@ -28,7 +28,7 @@
   "devDependencies": {
     "body-parser": "^1.12.3",
     "express": "^4.12.3",
-    "jspm": "^0.16.23",
+    "jspm": "^0.16.25",
     "phantomjs-polyfill": "0.0.1",
     "testem": "^1.0.0"
   },

@@ -268,59 +268,62 @@ let auth = {token: 'g54gsfdgw34qj*9764w3'};
 
 // Custom pajax class
 class MyPajax extends Pajax {
-  // All delete requests should be authenticated
+  // Add new method for authenticated GETs
+  getAuth(...args) {
+    return super.get(...args).authenticate();
+  }
+  // Override delete()
+  // All DELETE requests should be authenticated
   delete(...args) {
-    return super.post(...args).authenticate();
-  }
-
-  // Use our custom Request class
-  createRequest(...args) {
-    return new MyRequest(this.auth, ...args);
-  }
-
-  // Use our custom Response class
-  createResponse(...args) {
-    return new MyResponse(...args);
+    return super.delete(...args).authenticate();
   }
 }
 
 // Custom request class
 MyPajax.Request = class extends Pajax.Request {
-  constructor(auth, ...args) {
-    super(...args);
-    // Store the auth object on the request
-    this.auth = auth;
-  }
   // Adds the token to the request header
   authenticate() {
-    return this.before(req=> {
-      req.header('authorization', `Bearer ${req.auth.token}`);
-    });
+    return this.header('authorization', `Bearer ${this.opts.auth.token}`);
   }
 }
 
 // Custom response class
-MyPajax.Reponse = class extends Pajax.Response {
+MyPajax.Response = class extends Pajax.Response {
   // Checks if we are authenticated
-  get authenticated() {
+  get isAuthenticated() {
     return this.headers['X-authentication-level'] > 0;
   }
 }
 
-var pajax = new MyPajax(auth, opts);
+var pajax = new MyPajax({auth});
 
+// token added by getAuth()
+pajax.getAuth(url)
+     .fetch()
+     .then(res => {
+       // res.isAuthenticated = true
+     });
+
+// no token added
 pajax.get(url)
+     .fetch()
+     .then(res => {
+       // res.isAuthenticated = false
+     });
+     
+// token added manually
+pajax.post(url)
      .authenticate() // Adds bearer token to request
      .fetch()
      .then(res => {
-       // res.authenticated = true
+       // res.isAuthenticated = true
      });
 
-// bearer token is added by Pajax class
-pajax.post(url)
+// token added by delete() override
+pajax.delete(url)
      .fetch()
      .then(res => {
-       // res.authenticated = true
+       // res.isAuthenticated = true
      });     
 ```
 There are also some predefined classes:

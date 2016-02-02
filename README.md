@@ -266,36 +266,8 @@ or override the existing ones.
 // Our external authenticator
 let auth = {token: 'g54gsfdgw34qj*9764w3'};
 
-// Class for the request objects
-class MyRequest extends Pajax.Request {
-  constructor(auth, ...args) {
-    super(...args);
-    // Store the auth object on the request
-    this.auth = auth;
-  }
-  // Adds the token to the request header
-  authenticate() {
-    return this.before(req=> {
-      req.header('authorization', `Bearer ${req.auth.token}`);
-    });
-  }
-}
-
-class MyResponse extends Pajax.Response {
-  // Checks if we are authenticated
-  get authenticated() {
-    return this.headers['X-authentication-level'] > 0;
-  }
-}
-
 // Custom pajax class
 class MyPajax extends Pajax {
-  // extend ctor
-  constructor(auth, ...args) {
-    super(...args);
-    this.auth = auth;
-  }
-
   // All delete requests should be authenticated
   delete(...args) {
     return super.post(...args).authenticate();
@@ -309,6 +281,29 @@ class MyPajax extends Pajax {
   // Use our custom Response class
   createResponse(...args) {
     return new MyResponse(...args);
+  }
+}
+
+// Custom request class
+MyPajax.Request = class extends Pajax.Request {
+  constructor(auth, ...args) {
+    super(...args);
+    // Store the auth object on the request
+    this.auth = auth;
+  }
+  // Adds the token to the request header
+  authenticate() {
+    return this.before(req=> {
+      req.header('authorization', `Bearer ${req.auth.token}`);
+    });
+  }
+}
+
+// Custom response class
+MyPajax.Reponse = class extends Pajax.Response {
+  // Checks if we are authenticated
+  get authenticated() {
+    return this.headers['X-authentication-level'] > 0;
   }
 }
 

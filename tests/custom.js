@@ -4,31 +4,7 @@ let auth = {
   token: 'salt'
 };
 
-class MyRequest extends Pajax.Request {
-  constructor(auth, ...args) {
-    super(...args);
-    this.auth = auth;
-  }
-  authenticate(token2) {
-    return this.before(req=> {
-      req.header('authorization', `Bearer ${req.auth.token} ${token2}`);
-    });
-  }
-}
-
-class MyResponse extends Pajax.Response {
-  get isAuthenticated() {
-    return !!this.body.authorization;
-  }
-}
-
 class MyPajax extends Pajax {
-
-  constructor(auth, ...args) {
-    super(...args);
-    this.auth = auth;
-  }
-
   validateToken() {
     return this.get('/headerecho')
                .authenticate('rosemary')
@@ -41,17 +17,23 @@ class MyPajax extends Pajax {
   post(...args) {
     return super.post(...args).authenticate('pepper');
   }
-
-  createRequest(...args) {
-    return new MyRequest(this.auth, ...args);
-  }
-
-  createResponse(...args) {
-    return new MyResponse(...args);
-  }
 }
 
-var pajax = new MyPajax(auth, {baseURL});
+MyPajax.Request = class extends Pajax.Request {
+  authenticate(token2) {
+    return this.before(req=> {
+      req.header('authorization', `Bearer ${req.opts.auth.token} ${token2}`);
+    });
+  }
+};
+
+MyPajax.Response = class extends Pajax.Response {
+  get isAuthenticated() {
+    return !!this.body.authorization;
+  }
+};
+
+var pajax = new MyPajax({auth,baseURL});
 
 it('should send and receive the authToken', function(done) {
   pajax.get('/headerecho')

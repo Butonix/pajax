@@ -11,15 +11,6 @@ describe('basic', function() {
          }, noCall).then(done, done);
   });
 
-  it('should get parsed json via response type. Not working in some (older) Browsers.', function(done) {
-    pajax.get('/json')
-         .setResponseType('json')
-         .fetch()
-         .then(res => {
-           assert.deepEqual(res.body, {foo: 'bar'});
-         }, noCall).then(done, done);
-  });
-
   it('should get json as text', function(done) {
     pajax.get('/json')
          .asText()

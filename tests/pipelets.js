@@ -6,7 +6,7 @@ describe('req hooks', function() {
   it('should call the hooks', function(done) {
     pajax.get('/header')
          .before(req=> {
-           req.headers['Accept-Language'] = 'foo';
+           req.header('Accept-Language', 'foo');
          })
          .after(res=> {
            res.decoration = 'flowers';

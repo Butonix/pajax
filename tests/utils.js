@@ -1,17 +1,17 @@
+import Pajax from '../lib/main';
+
 export {default as Pajax} from '../lib/main';
 
 export var assert = chai.assert;
 
-export function noCall(res) {
-  console.log(res);
-  assert.fail('Should not be called');
+export function noCall(err) {
+  let msg;
+  if(err instanceof Pajax.Response) {
+    msg = `Status ${err.status} ${err.url} - ${err.error}`;
+  } else {
+    msg = Object.toString(err);
+  }
+  assert.fail(false, msg);
 }
 
 export var baseURL = 'http://127.0.0.1:3500';
-
-export function noCall(res) {
-  console.log('noCall', res.status);
-  console.log('noCall', res.error);
-  console.log('noCall', res.body);
-  assert.fail('Should not be called');
-}

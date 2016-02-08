@@ -10,8 +10,6 @@ It has similarities to the upcoming [Fetch](https://fetch.spec.whatwg.org/) stan
 ```sh
 jspm install github:n-fuse/pajax
 ```
-
-
 ## Quick start
 
 ### Fetching data via fetch()
@@ -310,7 +308,7 @@ pajax.get(url)
      .then(res => {
        // res.isAuthenticated = false
      });
-     
+
 // token added manually
 pajax.post(url)
      .authenticate() // Adds bearer token to request

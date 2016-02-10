@@ -19,7 +19,6 @@
   "globalstrict": false, // Allow global "use strict" (also enables 'strict').
   "esnext": true, // ES6 syntax
   "futurehostile": true, // Warn about use of future language keywords.
-  "predef": [ "-Promise" ], // Allow me to redefine native Promise
 
 
   // The Good Parts.

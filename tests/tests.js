@@ -5,3 +5,4 @@ import './request';
 import './json';
 import './pipelets';
 import './custom';
+import './async';

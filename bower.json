@@ -1,0 +1,23 @@
+{
+  "name": "pajax",
+  "description": "Promise based ajax/fetch library",
+  "main": "lib/main.js",
+  "license": "MIT",
+  "keywords": [
+    "ajax",
+    "fetch",
+    "xhr",
+    "promise"
+  ],
+  "homepage": "https://github.com/n-fuse/pajax",
+  "moduleType": [
+    "es6"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "jspm_packages",
+    "bower_components",
+    "tests"
+  ]
+}

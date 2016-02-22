@@ -1,10 +1,11 @@
-import Pajax from '../lib/main';
+import Pajax from '../lib/main.js';
 
-export {default as Pajax} from '../lib/main';
+export {default as Pajax} from '../lib/main.js';
 
 export var assert = chai.assert;
 
 export function noCall(err) {
+  console.log(err);
   let msg;
   if(err instanceof Pajax.Response) {
     msg = `Status ${err.status} ${err.url} - ${err.error}`;

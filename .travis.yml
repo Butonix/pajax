@@ -3,7 +3,7 @@ node_js:
   - "4.2.2"
 
 before_install:
-- npm install -g jspm
+- npm install -g jspm@beta
 - jspm config registries.github.auth $JSPM_GITHUB_AUTH_TOKEN
 - jspm install
 

@@ -1,4 +1,4 @@
-import {Pajax,assert,noCall,baseURL} from './utils';
+import {Pajax,assert,noCall,baseURL} from './utils.js';
 
 let auth = {
   token: 'salt'

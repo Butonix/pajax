@@ -1,4 +1,4 @@
-import {Pajax,assert,noCall,baseURL} from './utils';
+import {Pajax,assert,noCall,baseURL} from './utils.js';
 
 it('should fetch ok', function(done) {
   Pajax.fetch('http://127.0.0.1:3500/ok')

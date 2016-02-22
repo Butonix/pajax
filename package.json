@@ -8,7 +8,7 @@
     "xhr",
     "promise"
   ],
-  "main": "lib/main.js",
+  "main": "dist/pajax.js",
   "author": {
     "name": "n-fuse GmbH",
     "email": "info@n-fuse.de",
@@ -23,22 +23,22 @@
   "scripts": {
     "pretest": "./server/start.sh",
     "test": "testem ci || true",
-    "posttest": "./server/stop.sh"
+    "posttest": "./server/stop.sh",
+    "build": "jspm build lib/main.js dist/pajax.js --format umd --global-name Pajax --skip-source-maps"
   },
   "devDependencies": {
     "body-parser": "^1.12.3",
     "express": "^4.12.3",
-    "jspm": "^0.16.26",
+    "jspm": "^0.17.0-beta.7",
     "phantomjs-polyfill": "0.0.1",
+    "promise-polyfill": "^3.1.0",
     "testem": "^1.0.0"
   },
   "jspm": {
-    "registry": "jspm",
+    "main": "lib/main.js",
     "format": "es6",
     "devDependencies": {
-      "babel": "npm:babel-core@^5.8.24",
-      "babel-runtime": "npm:babel-runtime@^5.8.24",
-      "core-js": "npm:core-js@^1.1.4"
+      "plugin-babel": "npm:systemjs-plugin-babel@^0.0.5"
     }
   }
 }

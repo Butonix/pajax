@@ -1,6 +1,7 @@
 {
   "serve_files": [
     "node_modules/phantomjs-polyfill/bind-polyfill.js",
+    "node_modules/promise-polyfill/Promise.js",
     "bundle.tmp.js"
   ],
   "src_files": [
@@ -14,6 +15,6 @@
   "phantomjs_args": [
     "--ignore-ssl-errors=true"
   ],
-  "before_tests": "jspm bundle-sfx tests/tests bundle.tmp.js",
+  "before_tests": "jspm build tests/tests.js bundle.tmp.js --format umd --global-name test",
   "on_exit": "rm bundle.tmp.js bundle.tmp.js.map"
 }

@@ -1,7 +1,7 @@
-import './config';
-import './helpers';
-import './fetch';
-import './request';
-import './json';
-import './pipelets';
-import './custom';
+import './config.js';
+import './helpers.js';
+import './fetch.js';
+import './request.js';
+import './json.js';
+import './pipelets.js';
+import './custom.js';

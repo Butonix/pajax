@@ -1,4 +1,4 @@
-import {Pajax,assert,noCall,baseURL} from './utils';
+import {Pajax,assert,noCall,baseURL} from './utils.js';
 
 it('should have static helpers', function() {
   assert.strictEqual(typeof Pajax.qsParse, 'function');

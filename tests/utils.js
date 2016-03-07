@@ -1,6 +1,5 @@
-import Pajax from '../lib/main.js';
-
-export {default as Pajax} from '../lib/main.js';
+import Pajax from '../lib/pajax.js';
+export {Pajax};
 
 export var assert = chai.assert;
 

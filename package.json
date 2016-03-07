@@ -24,7 +24,7 @@
     "pretest": "./server/start.sh",
     "test": "testem ci || true",
     "posttest": "./server/stop.sh",
-    "build": "jspm build lib/main.js dist/pajax.js --format umd --global-name Pajax --skip-source-maps"
+    "build": "jspm build lib/pajax.js dist/pajax.js --format umd --global-name Pajax --skip-source-maps"
   },
   "devDependencies": {
     "body-parser": "^1.12.3",
@@ -35,7 +35,7 @@
     "testem": "^1.0.0"
   },
   "jspm": {
-    "main": "lib/main.js",
+    "main": "lib/pajax.js",
     "format": "es6",
     "devDependencies": {
       "plugin-babel": "npm:systemjs-plugin-babel@^0.0.5"

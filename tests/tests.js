@@ -1,5 +1,4 @@
 import './config.js';
-import './helpers.js';
 import './fetch.js';
 import './request.js';
 import './json.js';

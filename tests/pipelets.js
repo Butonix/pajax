@@ -1,18 +1,20 @@
 import {Pajax,assert,noCall,baseURL} from './utils.js';
 
 describe('req hooks', function() {
-  var pajax = new Pajax({baseURL});
+  var pajax = new Pajax();
 
-  it('should call the hooks', function(done) {
-    pajax.get('/header')
+  it('should call the pipelets', function(done) {
+    pajax.get(baseURL + '/header')
          .before(req=> {
-           req.header('Accept-Language', 'foo');
+           return req.header('Accept-Language', 'foo');
          })
          .after(res=> {
            res.decoration = 'flowers';
+           return res;
          })
          .afterSuccess(res=> {
            res.body = res.body.replace('foo', 'bar');
+           return res;
          })
          .fetch()
          .then(res => {
@@ -21,10 +23,11 @@ describe('req hooks', function() {
          }, noCall).then(done, done);
   });
 
-  it('should call the hooks 2', function(done) {
-    pajax.get('/error')
+  it('should call the error pipelet', function(done) {
+    pajax.get(baseURL + '/error')
     .afterFailure(res=> {
       res.error = res.error.replace('Internal ', '');
+      return res;
     })
     .fetch()
     .catch(res => {
@@ -34,22 +37,25 @@ describe('req hooks', function() {
 });
 
 describe('pajax hooks', function() {
-  var pajax = new Pajax({baseURL})
+  var pajax = new Pajax()
               .before(req=> {
-                req.headers['Accept-Language'] = 'foo';
+                return req.header('Accept-Language', 'foo');
               })
               .after(res=> {
                 res.decoration = 'flowers';
+                return res;
               })
               .afterFailure(res=> {
                 res.error = res.error.replace('Internal ', '');
+                return res;
               })
               .afterSuccess(res=> {
                 res.body = res.body.replace('foo', 'bar');
+                return res;
               });
 
   it('should call the hooks', function(done) {
-    pajax.get('/header')
+    pajax.get(baseURL + '/header')
          .fetch()
          .then(res => {
            assert.strictEqual(res.body, 'accept-language: bar');
@@ -58,7 +64,7 @@ describe('pajax hooks', function() {
   });
 
   it('should call the hooks 2', function(done) {
-    pajax.get('/error')
+    pajax.get(baseURL + '/error')
          .fetch()
          .catch(res => {
            assert.strictEqual(res.error, 'Server Error');

@@ -13,7 +13,7 @@ describe('basic', function() {
 
   it('should make request with base url', function(done) {
     var pajax = new Pajax({baseURL});
-    pajax.get('/ok')
+    pajax.get(baseURL + '/ok')
          .fetch()
          .then(res => {
            assert.strictEqual(res.body, 'ok');
@@ -22,7 +22,7 @@ describe('basic', function() {
 
   it('should reject request', function(done) {
     var pajax = new Pajax({baseURL});
-    pajax.get('/error')
+    pajax.get(baseURL + '/error')
          .fetch()
          .then(noCall, res => {
            assert.strictEqual(res.status, 500);
@@ -37,7 +37,7 @@ describe('advanced', function() {
   var pajax = new Pajax({baseURL});
 
   it('should post data', function(done) {
-    pajax.post('/data')
+    pajax.post(baseURL + '/data')
          .attach('foo')
          .fetch()
          .then(res => {
@@ -46,34 +46,22 @@ describe('advanced', function() {
   });
 
   it('should receive the response headers', function(done) {
-    pajax.get('/header')
+    pajax.get(baseURL + '/header')
          .fetch()
          .then(res => {
-           assert.strictEqual(res.headers['content-type'], 'text/html; charset=utf-8');
-           assert.strictEqual(res.contentType, 'text/html');
+           assert.strictEqual(res.headers.get('content-type'), 'text/html; charset=utf-8');
          }, noCall).then(done, done);
   });
 
   it('should send the headers', function(done) {
-    pajax.get('/header')
+    pajax.get(baseURL + '/headerecho')
          .header('Accept-Language', 'foo')
+         .header('authorization', `foo`)
          .fetch()
          .then(res => {
-           assert.strictEqual(res.body, 'accept-language: foo');
+           assert.strictEqual(res.body['accept-language'], 'foo');
+           assert.strictEqual(res.body['authorization'], 'foo');
          }, noCall).then(done, done);
-  });
-
-  it('should add query params to url', function() {
-    var url = pajax.get('/url?foo=0&me=4')
-                   .query({foo: 1}) // overrides foo=0
-                   .query({bar: 2}) // merges bar=2
-                   .query('woo', 3) // merges woo=3
-                   .url;
-
-    assert.isTrue(url.indexOf('foo=1')>-1);
-    assert.isTrue(url.indexOf('bar=2')>-1);
-    assert.isTrue(url.indexOf('woo=3')>-1);
-    assert.isTrue(url.indexOf('me=4')>-1);
   });
 
   it('should retry the request', function(done) {

@@ -11,16 +11,31 @@ class MyPajax extends Pajax {
   }
 
   validateToken() {
-    return this.get(baseURL + '/headerecho')
+    return this.request(baseURL + '/headerecho')
+               .get()
                .authenticate('rosemary')
+               .checkStatus()
                .fetch()
                .then(res=>{
                  return res.body.authorization==='Bearer salt rosemary';
                });
   }
 
-  post(...args) {
-    return super.post(...args).authenticate('pepper');
+  getAuthenticated(url, init) {
+    return this.request(url, init)
+               .get()
+               .authenticate('cinnamon')
+               .checkStatus()
+               .fetch();
+  }
+
+  post(url, body, init) {
+      return this.request(url, init)
+                 .post()
+                 .attach(body)
+                 .authenticate('pepper')
+                 .checkStatus()
+                 .fetch();
   }
 }
 
@@ -37,14 +52,13 @@ MyPajax.Response = class extends Pajax.Response {
     return !!this.body.authorization;
   }
 };
+
 describe('custom', function() {
 
   let pajax = new MyPajax(auth, {baseURL});
 
   it('should send and receive the authToken', function(done) {
-    pajax.get(baseURL + '/headerecho')
-         .authenticate('cinnamon')
-         .fetch()
+    pajax.getAuthenticated(baseURL + '/headerecho')
          .then(res => {
            assert.strictEqual(res.isAuthenticated, true);
            assert.strictEqual(res.body.authorization, 'Bearer salt cinnamon');
@@ -60,7 +74,6 @@ describe('custom', function() {
 
   it('should use send and receive the authToken 2', function(done) {
     pajax.post(baseURL + '/headerecho')
-         .fetch()
          .then(res => {
            assert.strictEqual(res.isAuthenticated, true);
            assert.strictEqual(res.body.authorization, 'Bearer salt pepper');

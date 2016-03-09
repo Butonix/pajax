@@ -3,16 +3,17 @@ import {Pajax,assert,noCall,baseURL} from './utils.js';
 describe('config', function() {
   it('should set configuration', function() {
 
-    assert.strictEqual(Pajax.get('/url').method, 'GET');
-    assert.strictEqual(Pajax.head('/url').method, 'HEAD');
-    assert.strictEqual(Pajax.post('/url').method, 'POST');
-    assert.strictEqual(Pajax.put('/url').method, 'PUT');
-    assert.strictEqual(Pajax.patch('/url').method, 'PATCH');
-    assert.strictEqual(Pajax.delete('/url').method, 'DELETE');
+    assert.strictEqual(Pajax.request('/url').get().method, 'GET');
+    assert.strictEqual(Pajax.request('/url').head().method, 'HEAD');
+    assert.strictEqual(Pajax.request('/url').post().method, 'POST');
+    assert.strictEqual(Pajax.request('/url').put().method, 'PUT');
+    assert.strictEqual(Pajax.request('/url').patch().method, 'PATCH');
+    assert.strictEqual(Pajax.request('/url').delete().method, 'DELETE');
 
     let prcb = (req, event)=>{};
 
-    var req = Pajax.patch('/url')
+    var req = Pajax.request('/url')
+                   .patch()
                    .header({'foo': 'bar'})
                    .header('bar', 'foo')
                    .noCache()

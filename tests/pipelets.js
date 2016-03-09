@@ -4,7 +4,9 @@ describe('req hooks', function() {
   var pajax = new Pajax();
 
   it('should call the pipelets', function(done) {
-    pajax.get(baseURL + '/header')
+    pajax.request(baseURL + '/header')
+         .get()
+         .checkStatus()
          .before(req=> {
            return req.header('Accept-Language', 'foo');
          })
@@ -24,15 +26,17 @@ describe('req hooks', function() {
   });
 
   it('should call the error pipelet', function(done) {
-    pajax.get(baseURL + '/error')
-    .afterFailure(res=> {
-      res.error = res.error.replace('Internal ', '');
-      return res;
-    })
-    .fetch()
-    .catch(res => {
-      assert.strictEqual(res.error, 'Server Error');
-    }, noCall).then(done, done);
+    pajax.request(baseURL + '/error')
+         .get()
+         .checkStatus()
+         .afterFailure(res=> {
+           res.error = res.error.replace('Internal ', '');
+           return res;
+         })
+         .fetch()
+         .catch(res => {
+           assert.strictEqual(res.error, 'Server Error');
+         }, noCall).then(done, done);
   });
 });
 
@@ -56,7 +60,6 @@ describe('pajax hooks', function() {
 
   it('should call the hooks', function(done) {
     pajax.get(baseURL + '/header')
-         .fetch()
          .then(res => {
            assert.strictEqual(res.body, 'accept-language: bar');
            assert.strictEqual(res.decoration, 'flowers');
@@ -65,7 +68,6 @@ describe('pajax hooks', function() {
 
   it('should call the hooks 2', function(done) {
     pajax.get(baseURL + '/error')
-         .fetch()
          .catch(res => {
            assert.strictEqual(res.error, 'Server Error');
     }, noCall).then(done, done);

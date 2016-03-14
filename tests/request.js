@@ -1,80 +1,44 @@
 import {Pajax,assert,noCall,baseURL} from './utils.js';
 
-describe('basic', function() {
-  it('should make request', function(done) {
-    var pajax = new Pajax();
-    pajax.get('http://127.0.0.1:3500/ok')
+describe('blob', function() {
+  var pajax = new Pajax();
+  it('should receive the file as a blob', function(done) {
+    pajax.request(baseURL + '/file.bin')
          .fetch()
          .then(res => {
-           assert.strictEqual(res.status, 200);
-           assert.strictEqual(res.body, 'ok');
+           assert.strictEqual(res.body instanceof Blob, true);
+           assert.strictEqual(res.body.type, 'application/octet-stream');
          }, noCall).then(done, done);
-  });
-
-  it('should make request with base url', function(done) {
-    var pajax = new Pajax({baseURL});
-    pajax.get('/ok')
-         .fetch()
-         .then(res => {
-           assert.strictEqual(res.body, 'ok');
-         }, noCall).then(done, done);
-  });
-
-  it('should reject request', function(done) {
-    var pajax = new Pajax({baseURL});
-    pajax.get('/error')
-         .fetch()
-         .then(noCall, res => {
-           assert.strictEqual(res.status, 500);
-           assert.strictEqual(res.body, 'error');
-           assert.strictEqual(res.statusText, 'Internal Server Error');
-         }).then(done, done);
   });
 });
 
-
-describe('advanced', function() {
-  var pajax = new Pajax({baseURL});
-
-  it('should post data', function(done) {
-    pajax.post('/data')
-         .attach('foo')
-         .fetch()
-         .then(res => {
-           assert.strictEqual(res.body, 'POST: foo');
-         }, noCall).then(done, done);
-  });
-
+describe('headers', function() {
+  var pajax = new Pajax();
   it('should receive the response headers', function(done) {
-    pajax.get('/header')
+    pajax.request(baseURL + '/header')
+         .is('GET')
          .fetch()
          .then(res => {
-           assert.strictEqual(res.headers['content-type'], 'text/html; charset=utf-8');
-           assert.strictEqual(res.contentType, 'text/html');
+           assert.strictEqual(res.headers.get('content-type'), 'text/html; charset=utf-8');
          }, noCall).then(done, done);
   });
 
   it('should send the headers', function(done) {
-    pajax.get('/header')
+    pajax.request(baseURL + '/headerecho')
+         .is('GET')
          .header('Accept-Language', 'foo')
+         .header('authorization', `foo`)
          .fetch()
-         .then(res => {
-           assert.strictEqual(res.body, 'accept-language: foo');
+         .then(res => res.json())
+         .then(body => {
+           assert.strictEqual(body['accept-language'], 'foo');
+           assert.strictEqual(body['authorization'], 'foo');
          }, noCall).then(done, done);
   });
+});
 
-  it('should add query params to url', function() {
-    var url = pajax.get('/url?foo=0&me=4')
-                   .query({foo: 1}) // overrides foo=0
-                   .query({bar: 2}) // merges bar=2
-                   .query('woo', 3) // merges woo=3
-                   .url;
-
-    assert.isTrue(url.indexOf('foo=1')>-1);
-    assert.isTrue(url.indexOf('bar=2')>-1);
-    assert.isTrue(url.indexOf('woo=3')>-1);
-    assert.isTrue(url.indexOf('me=4')>-1);
-  });
+describe('retry', function() {
+  var pajax = new Pajax({baseURL});
 
   it('should retry the request', function(done) {
     function retry(req, cb) {
@@ -97,7 +61,7 @@ describe('advanced', function() {
       return Promise.resolve(i < 3);
     }
 
-    var req = pajax.get('/error');
+    var req = pajax.request('/error').checkStatus();
     retry(req, callback).then(noCall, res=> {
       assert.strictEqual(i, 3);
       done();

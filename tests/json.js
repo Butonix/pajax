@@ -1,81 +1,89 @@
 import {Pajax,assert,noCall,baseURL} from './utils.js';
 
-describe('basic', function() {
-  var pajax = new Pajax({baseURL});
+describe('JSON', function() {
+  var pajax = new Pajax();
 
-  it('should get parsed json via serializer', function(done) {
-    pajax.get('/json')
+  it('should get parsed json via json()', function(done) {
+    pajax.request(baseURL + '/json')
          .fetch()
-         .then(res => {
-           assert.deepEqual(res.body, {foo: 'bar'});
+         .then(res=>res.json())
+         .then(body => {
+           assert.deepEqual(body, {foo: 'bar'});
+         }, noCall).then(done, done);
+  });
+
+  it('should get parsed json via auto()', function(done) {
+    pajax.request(baseURL + '/json')
+         .fetch()
+         .then(res=>res.auto())
+         .then(body => {
+           assert.deepEqual(body, {foo: 'bar'});
          }, noCall).then(done, done);
   });
 
   it('should get json as text', function(done) {
-    pajax.get('/json')
-         .asText()
+    pajax.request(baseURL + '/json')
          .fetch()
-         .then(res => {
-           assert.strictEqual(res.body, '{"foo":"bar"}');
+         .then(res => res.text())
+         .then(text => {
+           assert.strictEqual(text, '{"foo":"bar"}');
          }, noCall).then(done, done);
   });
 
-  it('should convert data to json object as fallback', function(done) {
-    pajax.post('/json')
+  it('should get jsontext as json', function(done) {
+    pajax.request(baseURL + '/jsontext')
+         .fetch()
+         .then(res => res.json())
+         .then(data => {
+           assert.deepEqual(data, {foo: 'bar'});
+         }, noCall).then(done, done);
+  });
+
+  it('should convert req data to json object as fallback', function(done) {
+    pajax.request(baseURL + '/json')
+         .is('POST')
          .attach({post: 'json'})
          .fetch()
-         .then(res => {
-           assert.deepEqual(res.body, {post: 'json'});
+         .then(res => res.json())
+         .then(body => {
+           assert.deepEqual(body, {post: 'json'});
          }, noCall).then(done, done);
   });
 });
 
 describe('Pajax.JSON', function() {
-  var pajax = new Pajax.JSON({baseURL, forceJSON: true});
+  var pajax = new Pajax().JSON();
   it('should get parsed json', function(done) {
     // JSON as contentType text
-    pajax.get('/jsontext')
-         .fetch()
-         .then(res => {
-           assert.deepEqual(res.body, {'foo': 'bar'});
+    pajax.get(baseURL + '/jsontext')
+         .then(body => {
+           assert.deepEqual(body, {'foo': 'bar'});
          }, noCall).then(done, done);
   });
 
   it('should post json object', function(done) {
-    pajax.post('/json')
-         .attach({post: 'json'})
-         .fetch()
-         .then(res => {
-           assert.deepEqual(res.body, {'post': 'json'});
+    pajax.post(baseURL + '/json', {post: 'json'})
+         .then(body => {
+           assert.deepEqual(body, {'post': 'json'});
          }, noCall).then(done, done);
   });
 
   it('should get json as text', function(done) {
     // Force
-    pajax.get('/json')
+    pajax.request(baseURL + '/json')
          .asText()
          .fetch()
-         .then(res => {
-           assert.strictEqual(res.body, '{"foo":"bar"}');
+         .then(res=>res.auto())
+         .then(text => {
+           assert.strictEqual(text, '{"foo":"bar"}');
          }, noCall).then(done, done);
   });
 
   it('should reject invalid json', function(done) {
-    pajax.get('/ok')
-         .fetch()
+    pajax.get(baseURL + '/ok')
          .then(noCall, res => {
-           assert.strictEqual(res.error, 'Invalid response');
-           assert.strictEqual(res.body, 'ok');
+           assert.strictEqual(res.error, 'Invalid JSON');
          }).then(done, done);
-  });
-
-  var pajax2 = new Pajax.JSON({baseURL, forceJSON: false});
-  it('should get invalid json as text', function(done) {
-    pajax2.get('/ok')
-          .fetch()
-          .then(res => {
-            assert.strictEqual(res.body, 'ok');
-          }, noCall).then(done, done);
   });
 
 });

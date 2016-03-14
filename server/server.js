@@ -37,6 +37,10 @@ app.get('/json', function(req, res) {
   res.json({foo: 'bar'});
 });
 
+app.get('/file.bin', function(req, res) {
+  res.sendFile(__dirname + '/file.bin');
+});
+
 app.get('/jsontext', function(req, res) {
   res.send('{"foo": "bar"}');
 });

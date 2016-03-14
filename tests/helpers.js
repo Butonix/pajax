@@ -1,47 +1,45 @@
 import {Pajax,assert,noCall,baseURL} from './utils.js';
 
-it('should have static helpers', function() {
-  assert.strictEqual(typeof Pajax.qsParse, 'function');
-  assert.strictEqual(typeof Pajax.qsStringify, 'function');
-  assert.strictEqual(typeof Pajax.isURL, 'function');
-  assert.strictEqual(typeof Pajax.parseURL, 'function');
-  assert.strictEqual(typeof Pajax.merge, 'function');
+describe('get', function() {
+  var pajax = new Pajax();
+  it('should get text response', function(done) {
+    pajax.get('http://127.0.0.1:3500/ok')
+         .then(body => {
+           assert.strictEqual(body, 'ok');
+         }, noCall).then(done, done);
+  });
 
-  var parsedURL = Pajax.parseURL('http://www.foo.net/bar');
+  it('should get json response', function(done) {
+    pajax.get('http://127.0.0.1:3500/json')
+         .then(body => {
+           assert.deepEqual(body, { foo: 'bar' });
+         }, noCall).then(done, done);
+  });
 
-  assert.strictEqual(parsedURL.isRelative, false);
-  assert.strictEqual(parsedURL.host, 'www.foo.net');
+  it('should reject response', function(done) {
+    pajax.get(baseURL + '/error')
+         .then(noCall, res => {
+           assert.strictEqual(res.status, 500);
+         }).then(done, done);
+  });
 });
 
-it('should parse absolute url', function() {
+describe('post/put/patch', function() {
+  var pajax = new Pajax();
+  it('should post data', function(done) {
+    pajax.post(baseURL + '/data', 'foo')
+         .then(body => {
+           assert.strictEqual(body, 'POST: foo');
+         }, noCall).then(done, done);
 
-  let url = Pajax.parseURL('http://www.foo.bar/path/foo?foo=bar#foo')
+    pajax.put(baseURL + '/data', 'foo')
+         .then(body => {
+           assert.strictEqual(body, 'PUT: foo');
+         }, noCall).then(done, done);
 
-  assert.strictEqual(url.protocol, 'http:');
-  assert.strictEqual(url.hostname, 'www.foo.bar');
-  assert.strictEqual(url.pathname, '/path/foo');
-  assert.strictEqual(url.search, '?foo=bar');
-  assert.strictEqual(url.hash, '#foo');
-});
-
-it('should parse relative url', function() {
-
-  let url = Pajax.parseURL('/path/foo?foo=bar#foo')
-
-  assert.strictEqual(url.protocol, '');
-  assert.strictEqual(url.hostname, '');
-  assert.strictEqual(url.pathname, '/path/foo');
-  assert.strictEqual(url.search, '?foo=bar');
-  assert.strictEqual(url.hash, '#foo');
-});
-
-it('should parse relative protocol url', function() {
-
-  let url = Pajax.parseURL('//www.foo.bar/path/foo?foo=bar#foo')
-
-  assert.strictEqual(url.protocol, 'http:');
-  assert.strictEqual(url.hostname, 'www.foo.bar');
-  assert.strictEqual(url.pathname, '/path/foo');
-  assert.strictEqual(url.search, '?foo=bar');
-  assert.strictEqual(url.hash, '#foo');
+    pajax.patch(baseURL + '/data', 'foo')
+         .then(body => {
+           assert.strictEqual(body, 'PATCH: foo');
+         }, noCall).then(done, done);
+  });
 });

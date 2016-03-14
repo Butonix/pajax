@@ -26,6 +26,16 @@
     return Constructor;
   };
 
+  var _toConsumableArray = (function (arr) {
+    if (Array.isArray(arr)) {
+      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
+        arr2[i] = arr[i];
+      }return arr2;
+    } else {
+      return Array.from(arr);
+    }
+  })
+
   var _possibleConstructorReturn = (function (self, call) {
     if (!self) {
       throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
@@ -50,409 +60,153 @@
     if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
   })
 
-  function resolvePipelets(pipelets, o) {
-    var pipeChain = Promise.resolve(o);
-    var resolve = function resolve() {
-      return o;
-    };
-    (pipelets || []).forEach(function (pipelet) {
-      pipeChain = pipeChain.then(pipelet).then(resolve);
+  function reader2Promise(reader) {
+    return new Promise(function (resolve, reject) {
+      reader.onload = function () {
+        resolve(reader.result);
+      };
+      reader.onerror = function () {
+        reject(reader.error);
+      };
     });
-    return pipeChain;
   }
 
-  function merge() {
-    var result = {};
-
-    for (var _len = arguments.length, objects = Array(_len), _key = 0; _key < _len; _key++) {
-      objects[_key] = arguments[_key];
-    }
-
-    objects.forEach(function (o) {
-      o = o || {};
-      Object.keys(o).forEach(function (key) {
-        result[key] = o[key];
-      });
-    });
-    return result;
+  function blob2ArrayBuffer(blob) {
+    var reader = new FileReader();
+    reader.readAsArrayBuffer(blob);
+    return reader2Promise(reader);
   }
 
-  function unique(value, index, self) {
-    return self.indexOf(value) === index;
+  function blob2text(blob) {
+    var reader = new FileReader();
+    reader.readAsText(blob);
+    return reader2Promise(reader);
   }
 
-  function conv(value) {
-    switch (typeof value) {
-      case 'string':
-        return value;
-      case 'boolean':
-        return value ? 'true' : 'false';
-      case 'number':
-        return isFinite(value) ? value.toString() : '';
-      default:
-        return '';
+  function bodyType(body) {
+    if (typeof body === 'string') {
+      return 'text';
+    } else if (Blob.prototype.isPrototypeOf(body)) {
+      return 'blob';
+    } else if (FormData.prototype.isPrototypeOf(body)) {
+      return 'formData';
+    } else if (body && typeof body === 'object') {
+      return 'json';
+    } else {
+      return null;
     }
   }
 
-  // stringify and parse query parameters
-  var qs = {
-    stringify: function stringify(obj) {
-      if (obj && typeof obj === 'object') {
-        var res = [];
-        for (var p in obj) {
-          if (obj.hasOwnProperty(p)) {
-            var s = encodeURIComponent(p) + '=';
-            s += encodeURIComponent(conv(obj[p]));
-            res.push(s);
-          }
-        }
-        return res.join('&');
-      } else {
-        return '';
+  function parseJSON(body) {
+    try {
+      return JSON.parse(body);
+    } catch (ex) {
+      throw 'Invalid JSON';
+    }
+  }
+
+  var map = {
+    text: {
+      json: function json(body) {
+        return Promise.resolve(JSON.stringify(body));
+      },
+      blob: function blob(body) {
+        return blob2text(body);
       }
     },
-    parse: function parse(qs) {
-      var res = {};
-
-      if (typeof qs !== 'string' || !qs) {
-        return res;
+    json: {
+      text: function text(body) {
+        return Promise.resolve(parseJSON(body));
+      },
+      blob: function blob(body) {
+        return blob2text(body).then(parseJSON);
       }
-
-      qs = qs.split('&');
-
-      for (var i = 0; i < qs.length; i++) {
-        var s = qs[i].replace(/\+/g, '%20');
-        var eqidx = s.indexOf('=');
-
-        var prop = undefined,
-            value = undefined;
-
-        if (eqidx >= 0) {
-          prop = s.substr(0, eqidx);
-          value = s.substr(eqidx + 1);
-        } else {
-          prop = s;
-          value = '';
-        }
-
-        prop = decodeURIComponent(prop);
-        value = decodeURIComponent(value);
-
-        res[prop] = value;
+    },
+    blob: {
+      text: function text(body) {
+        return Promise.resolve(new Blob([body]));
+      },
+      json: function json(body) {
+        return Promise.resolve(new Blob([JSON.stringify(body)]));
       }
-
-      return res;
+    },
+    arrayBuffer: {
+      blob: function blob(body) {
+        return blob2ArrayBuffer(body);
+      }
     }
   };
 
-  var serializers = {
-    'application/json': JSON.stringify,
-    'application/ld+json': JSON.stringify,
-    'application/x-www-form-urlencoded': qs.stringify
-  };
-
-  var deserializers = {
-    'application/json': JSON.parse,
-    'application/ld+json': JSON.parse,
-    'application/x-www-form-urlencoded': qs.parse
-  };
-
-  // In memory cache, so we won't parse the same url twice
-  var urlCache = {};
-
-  /**
-   * For parsing a url into component parts
-   * there are other parts which are suppressed (?:) but we only want to represent what would be available
-   * from `(new URL(urlstring))` in this api.
-   */
-  var urlParser = /^(?:(?:(([^:\/#\?]+:)?(?:(?:\/\/)(?:(?:(?:([^:@\/#\?]+)(?:\:([^:@\/#\?]*))?)@)?(([^:\/#\?\]\[]+|\[[^\/\]@#?]+\])(?:\:([0-9]+))?))?)?)?((?:\/?(?:[^\/\?#]+\/+)*)(?:[^\?#]*)))?(\?[^#]+)?)(#.*)?/;
-  var urlValidator = /^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i;
-  var keys = ["href", // http://user:pass@host.com:81/directory/file.ext?query=1#anchor
-  "origin", // http://user:pass@host.com:81
-  "protocol", // http:
-  "username", // user
-  "password", // pass
-  "host", // host.com:81
-  "hostname", // host.com
-  "port", // 81
-  "pathname", // /directory/file.ext
-  "search", // ?query=1
-  "hash" // #anchor
-  ];
-
-  // Check if string is valid url
-  function isURL(url) {
-    return urlValidator.test(url);
-  }
-
-  function parseURL(url) {
-    url = url || '';
-
-    // We first check if we have parsed this URL before, to avoid running the  monster regex over and over
-    if (urlCache[url]) {
-      return urlCache[url];
-    }
-
-    var currentProtocol = window.location.protocol;
-    var currentHostName = window.location.hostname;
-
-    // Add current protocol when a relative protocol is used
-    if (url.slice(0, 2) === '//') {
-      url = currentProtocol + url;
-    }
-
-    // Result object
-    var result = {};
-
-    result.isValid = isURL(url);
-    result.isRelative = !result.isValid;
-
-    var fallback = false;
-
-    // Check file protocol for special case
-    // `URL` function does not work in android device, use `uriParser` instead
-    // all requests in android come with `file` protocol
-    fallback = currentProtocol === 'file:';
-
-    // URL() is not available in all browsers
-    fallback = typeof URL !== 'function';
-
-    if (!fallback) {
-      var tempURL = undefined;
-      if (result.isRelative) {
-        // make URL valid if it's relative
-        tempURL = currentProtocol + "//" + currentHostName + url.replace(/\A\//g, '');
+  function convertBody(to) {
+    return function (body) {
+      var from = bodyType(body);
+      if (body === null || body === undefined || !from || from === to) {
+        return Promise.resolve(body);
+      } else if (map[to] && map[to][from]) {
+        return map[to][from](body);
       } else {
-        tempURL = url;
+        return Promise.reject('Convertion from ' + from + ' to ' + to + ' not supported');
       }
-
-      try {
-        (function () {
-          var ourl = new URL(tempURL);
-          keys.forEach(function (key) {
-            result[key] = ourl[key] || '';
-          });
-          if (result.isRelative) {
-            // removing hosts for relative URLs to be compliant with expectations
-            result['host'] = '';
-            result['hostname'] = '';
-            result['href'] = url;
-            result['origin'] = '';
-            result['protocol'] = '';
-          }
-        })();
-      } catch (err) {
-        fallback = true;
-      }
-    }
-
-    if (fallback) {
-      // Parsed url
-      var matches = urlParser.exec(url);
-      // Number of indexes pulled from the url via the urlParser (see 'keys')
-      var i = keys.length;
-      while (i--) {
-        result[keys[i]] = matches[i] || '';
-      }
-    }
-
-    // Stored parsed values
-    urlCache[url] = result;
-
-    return result;
+    };
   }
 
-  var _toConsumableArray = (function (arr) {
-    if (Array.isArray(arr)) {
-      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
-        arr2[i] = arr[i];
-      }return arr2;
-    } else {
-      return Array.from(arr);
-    }
-  })
+  var Body = function () {
+    function Body() {
+      _classCallCheck(this, Body);
 
-  function set(target, option, value) {
-    if (value !== undefined) {
-      target.opts[option] = value;
-    } else {
-      delete target.opts[option];
-    }
-    return target;
-  }
-
-  var Configurator = function () {
-    function Configurator(opts) {
-      _classCallCheck(this, Configurator);
-
-      // Opts will be modified, so we create a clone by assigning
-      this.opts = {};
-      this.assignOpts(opts);
+      this.bodyUsed = false;
     }
 
-    _createClass(Configurator, [{
-      key: 'assignOpts',
-      value: function assignOpts() {
-        var _this = this;
-
-        var map = Configurator.assignMap;
-
-        for (var _len = arguments.length, objects = Array(_len), _key = 0; _key < _len; _key++) {
-          objects[_key] = arguments[_key];
-        }
-
-        objects.forEach(function (o) {
-          o = o || {};
-          // Merge and uniquify keys
-          var keys = [].concat(_toConsumableArray(Object.keys(o)), _toConsumableArray(Object.keys(map))).filter(unique);
-          keys.forEach(function (key) {
-            if (map[key]) {
-              _this.opts[key] = map[key](_this.opts[key], o[key]);
-            } else {
-              _this.opts[key] = o[key];
-            }
-          });
-        });
-        return this;
+    _createClass(Body, [{
+      key: 'text',
+      value: function text() {
+        return this.consumeBody().then(convertBody('text'));
       }
     }, {
-      key: 'before',
-      value: function before(func) {
-        this.opts.pipelets.before.push(func);
-        return this;
+      key: 'blob',
+      value: function blob() {
+        return this.consumeBody().then(convertBody('blob'));
       }
     }, {
-      key: 'after',
-      value: function after(func) {
-        this.opts.pipelets.after.push(func);
-        return this;
+      key: 'formData',
+      value: function formData() {
+        return this.consumeBody().then(convertBody('formData'));
       }
     }, {
-      key: 'afterSuccess',
-      value: function afterSuccess(func) {
-        this.opts.pipelets.afterSuccess.push(func);
-        return this;
+      key: 'json',
+      value: function json() {
+        return this.consumeBody().then(convertBody('json'));
       }
     }, {
-      key: 'afterFailure',
-      value: function afterFailure(func) {
-        this.opts.pipelets.afterFailure.push(func);
-        return this;
+      key: 'arrayBuffer',
+      value: function arrayBuffer() {
+        return this.consumeBody().then(convertBody('ArrayBuffer'));
       }
     }, {
-      key: 'attach',
-      value: function attach(body) {
-        return set(this, 'body', body);
-      }
-    }, {
-      key: 'setTimeout',
-      value: function setTimeout(timeout) {
-        return set(this, 'timeout', timeout);
-      }
-    }, {
-      key: 'setBaseURL',
-      value: function setBaseURL(baseURL) {
-        return set(this, 'baseURL', baseURL);
-      }
-    }, {
-      key: 'setContentType',
-      value: function setContentType(contentType) {
-        return set(this, 'contentType', contentType);
-      }
-    }, {
-      key: 'setResponseContentType',
-      value: function setResponseContentType(responseContentType) {
-        return set(this, 'responseContentType', responseContentType);
-      }
-    }, {
-      key: 'setResponseType',
-      value: function setResponseType(responseType) {
-        return set(this, 'responseType', responseType);
-      }
-    }, {
-      key: 'onProgress',
-      value: function onProgress(progressCb) {
-        return set(this, 'progress', progressCb);
-      }
-    }, {
-      key: 'withCredentials',
-      value: function withCredentials(cred) {
-        return set(this, 'credentials', typeof cred === 'string' ? cred : 'include');
-      }
-    }, {
-      key: 'noCache',
-      value: function noCache(_noCache) {
-        return set(this, 'cache', _noCache === false ? 'default' : 'no-cache');
-      }
-    }, {
-      key: 'asText',
-      value: function asText() {
-        return set(this, 'responseContentType', 'text/plain');
-      }
-    }, {
-      key: 'asJSON',
-      value: function asJSON() {
-        return set(this, 'responseContentType', 'application/json');
-      }
-    }, {
-      key: 'header',
-      value: function header(_header, value) {
-        this.opts.headers = this.opts.headers || {};
-        if (typeof _header === 'string' && value !== undefined) {
-          this.opts.headers[_header] = value;
-        } else if (typeof _header === 'string' && value === undefined) {
-          delete this.opts.headers[_header];
-        } else if (typeof _header === 'object') {
-          this.opts.headers = merge(this.opts.headers, _header);
+      key: 'consumeBody',
+      value: function consumeBody() {
+        if (this.bodyUsed) {
+          // TODO: Reject when body was used?
+          //   return Promise.reject(...);
+          return Promise.resolve(this.body);
         } else {
-          delete this.opts.headers;
+          this.bodyUsed = true;
+          return Promise.resolve(this.body);
         }
-        return this;
       }
     }, {
-      key: 'query',
-      value: function query(key, value) {
-        this.opts.queryParams = this.opts.queryParams || {};
-        if (typeof key === 'string' && value !== undefined) {
-          this.opts.queryParams[key] = value;
-        } else if (typeof key === 'string' && value === undefined) {
-          delete this.opts.queryParams[key];
-        } else if (typeof key === 'object') {
-          this.opts.queryParams = merge(this.opts.queryParams, key);
-        } else {
-          delete this.opts.queryParams;
-        }
-        return this;
+      key: 'convert',
+      value: function convert(to) {
+        return this.consumeBody().then(convertBody(to));
       }
     }]);
 
-    return Configurator;
+    return Body;
   }();
-
-  Configurator.assignMap = {
-    queryParams: function queryParams(qp1, qp2) {
-      return merge(qp1 || {}, qp2 || {});
-    },
-    headers: function headers(h1, h2) {
-      return merge(h1 || {}, h2 || {});
-    },
-    pipelets: function pipelets(p1, p2) {
-      p1 = p1 || {};
-      p2 = p2 || {};
-      return {
-        before: (p2.before || []).concat(p1.before || []),
-        after: (p2.after || []).concat(p1.after || []),
-        afterSuccess: (p2.afterSuccess || []).concat(p1.afterSuccess || []),
-        afterFailure: (p2.afterFailure || []).concat(p1.afterFailure || [])
-      };
-    }
-  };
 
   function checkStatus() {
     return function (res) {
-      // SUCCESS: status between 200 and 299 or 304
-      // Failure: status below 200 or beyond 299 excluding 304
-      if (!res.error && (res.status < 200 || res.status >= 300 && res.status !== 304)) {
+      if (!res.error && !res.ok) {
         // Unknown status code
         if (res.status < 100 || res.status >= 1000) {
           res.error = 'Invalid status code';
@@ -474,199 +228,17 @@
     };
   }
 
-  var Request = function (_Configurator) {
-    _inherits(Request, _Configurator);
+  function normalizeName(name) {
+    return String(name).toLowerCase().trim();
+  }
 
-    function Request(url, opts, factory) {
-      _classCallCheck(this, Request);
-
-      var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Request).call(this, opts));
-
-      if (typeof url !== 'string') {
-        throw 'URL required for request';
-      }
-      _this._url = url;
-      _this.factory = factory;
-      return _this;
-    }
-
-    _createClass(Request, [{
-      key: 'checkStatus',
-      value: function checkStatus$$() {
-        return this.after(checkStatus());
-      }
-
-      // Alias for fetch()
-
-    }, {
-      key: 'send',
-      value: function send() {
-        return this.fetch();
-      }
-    }, {
-      key: 'fetch',
-      value: function fetch() {
-        return this.factory.fetch(this);
-      }
-    }, {
-      key: 'url',
-      get: function get() {
-        var parsedURL = parseURL(this._url);
-        var url = '';
-
-        // Add base url when url is just a path
-        var baseURL = this.baseURL;
-        if (parsedURL.isRelative && baseURL) {
-          url = baseURL;
-        } else if (!parsedURL.isRelative) {
-          url = parsedURL.protocol + '//' + parsedURL.host;
-        }
-
-        url += parsedURL.pathname + parsedURL.hash;
-
-        var qp = {};
-
-        // Merge options params into qp hash
-        if (this.queryParams) {
-          qp = merge(qp, this.queryParams);
-        }
-
-        // When url contains query params, merge them into qp hash
-        if (parsedURL.search) {
-          var search = parsedURL.search.replace(/^\?/, '');
-          if (search) {
-            qp = merge(qs.parse(search), qp);
-          }
-        }
-
-        // Merge caching param into qp hash
-        if (this.method === 'GET' && this.cache === 'no-cache') {
-          var ts = Date.now();
-          qp._ = ++ts;
-        }
-
-        if (Object.keys(qp).length > 0) {
-          // Serialize query parameters into query string
-          url += '?' + qs.stringify(qp);
-        }
-
-        return url;
-      },
-      set: function set(url) {
-        this._url = url;
-      }
-    }, {
-      key: 'baseURL',
-      get: function get() {
-        return this.opts.baseURL;
-      },
-      set: function set(baseURL) {
-        this.opts.baseURL = baseURL;
-      }
-    }, {
-      key: 'queryParams',
-      get: function get() {
-        return this.opts.queryParams;
-      },
-      set: function set(queryParams) {
-        this.opts.queryParams = queryParams;
-      }
-    }, {
-      key: 'method',
-      get: function get() {
-        return this.opts.method;
-      },
-      set: function set(method) {
-        this.opts.method = method;
-      }
-    }, {
-      key: 'body',
-      get: function get() {
-        return this.opts.body;
-      },
-      set: function set(body) {
-        this.opts.body = body;
-      }
-    }, {
-      key: 'headers',
-      get: function get() {
-        return this.opts.headers;
-      },
-      set: function set(headers) {
-        this.opts.headers = headers;
-      }
-    }, {
-      key: 'credentials',
-      get: function get() {
-        return this.opts.credentials;
-      },
-      set: function set(credentials) {
-        this.opts.credentials = credentials;
-      }
-    }, {
-      key: 'cache',
-      get: function get() {
-        return this.opts.cache;
-      },
-      set: function set(cache) {
-        this.opts.cache = cache;
-      }
-    }, {
-      key: 'contentType',
-      get: function get() {
-        return this.opts.contentType;
-      },
-      set: function set(contentType) {
-        this.opts.contentType = contentType;
-      }
-    }, {
-      key: 'progress',
-      get: function get() {
-        return this.opts.progress;
-      },
-      set: function set(progress) {
-        this.opts.progress = progress;
-      }
-    }, {
-      key: 'timeout',
-      get: function get() {
-        return this.opts.timeout;
-      },
-      set: function set(timeout) {
-        this.opts.timeout = timeout;
-      }
-    }, {
-      key: 'responseType',
-      get: function get() {
-        return this.opts.responseType;
-      },
-      set: function set(responseType) {
-        this.opts.responseType = responseType;
-      }
-    }, {
-      key: 'pipelets',
-      get: function get() {
-        return this.opts.pipelets;
-      },
-      set: function set(pipelets) {
-        this.opts.pipelets = pipelets;
-      }
-    }, {
-      key: 'responseContentType',
-      get: function get() {
-        return this.opts.responseContentType;
-      },
-      set: function set(responseContentType) {
-        this.opts.responseContentType = responseContentType;
-      }
-    }]);
-
-    return Request;
-  }(Configurator);
+  function normalizeValue(name) {
+    return String(name);
+  }
 
   // Parses that string into a user-friendly key/value pair object.
   // http://www.w3.org/TR/XMLHttpRequest/#the-getallresponseheaders-method
-  var parseResponseHeaders = function parseResponseHeaders(headerStr) {
+  function parseResponseHeaders(headerStr) {
     var headers = {};
     if (!headerStr) {
       return headers;
@@ -678,497 +250,725 @@
       // if the header value has the string ": " in it.
       var index = headerPair.indexOf(': ');
       if (index > 0) {
-        var key = headerPair.substring(0, index).toLowerCase();
-        var value = headerPair.substring(index + 2);
-        headers[key.trim()] = value.trim();
+        var name = normalizeName(headerPair.substring(0, index));
+        var value = normalizeValue(headerPair.substring(index + 2));
+        headers[name] = value.trim();
       }
     }
     return headers;
-  };
+  }
 
-  var Response = function () {
-    function Response(req, xhr) {
-      _classCallCheck(this, Response);
+  var Headers = function () {
+    function Headers() {
+      var _this = this;
 
-      this.request = req;
-      this.xhr = xhr;
-      this.error = null;
-      this.headers = parseResponseHeaders(xhr.getAllResponseHeaders());
+      _classCallCheck(this, Headers);
 
-      var body = this.response;
+      this.headers = {};
 
-      try {
-        var responseType = req.responseType;
-        var contentType = req.responseContentType || this.contentType;
-
-        // When the response type is not set or text and a string is delivered try to find a matching parser via the content type
-        if ((!responseType || responseType === 'text') && typeof body === 'string' && body.length && contentType && deserializers[contentType]) {
-          try {
-            body = deserializers[contentType](body);
-          } catch (ex) {
-            throw 'Invalid response';
-          }
-          // When the responseType is set and the response body is null, reject the request
-        } else if (responseType && this.status !== 204 && this.status !== 205 && body === null) {
-            throw 'Invalid response';
-          }
-      } catch (ex) {
-        this.error = ex;
+      for (var _len = arguments.length, headersArr = Array(_len), _key = 0; _key < _len; _key++) {
+        headersArr[_key] = arguments[_key];
       }
 
-      this.body = body;
+      headersArr.forEach(function (headers) {
+
+        if (headers && typeof headers === 'string') {
+          headers = parseResponseHeaders(headers);
+        }
+
+        if (headers instanceof Headers) {
+          headers.keys().forEach(function (name) {
+            _this.append(name, headers.get(name));
+          });
+        } else if (headers && typeof headers === 'object') {
+          Object.keys(headers).forEach(function (key) {
+            _this.append(key, headers[key]);
+          });
+        }
+      });
+    }
+
+    _createClass(Headers, [{
+      key: 'append',
+      value: function append(name, value) {
+        name = normalizeName(name);
+        value = normalizeValue(value);
+        this.headers[name] = this.headers[name] || [];
+        this.headers[name].push(value);
+      }
+    }, {
+      key: 'delete',
+      value: function _delete(name) {
+        delete this.headers[normalizeName(name)];
+      }
+    }, {
+      key: 'get',
+      value: function get(name) {
+        name = normalizeName(name);
+        var values = this.headers[name] || [];
+        return values.length > 0 ? values[0] : null;
+      }
+    }, {
+      key: 'getAll',
+      value: function getAll(name) {
+        name = normalizeName(name);
+        return this.headers[name] || [];
+      }
+    }, {
+      key: 'has',
+      value: function has(name) {
+        name = normalizeName(name);
+        return !!this.headers[name];
+      }
+    }, {
+      key: 'set',
+      value: function set(name, value) {
+        name = normalizeName(name);
+        value = normalizeValue(value);
+        this.headers[name] = [value];
+      }
+    }, {
+      key: 'keys',
+      value: function keys() {
+        return Object.keys(this.headers);
+      }
+    }, {
+      key: 'values',
+      value: function values() {
+        var _this2 = this;
+
+        return Object.keys(this.headers).map(function (name) {
+          return _this2.get(name);
+        });
+      }
+    }, {
+      key: 'entries',
+      value: function entries() {
+        var _this3 = this;
+
+        return Object.keys(this.headers).map(function (name) {
+          return [name, _this3.get(name)];
+        });
+      }
+    }]);
+
+    return Headers;
+  }();
+
+  var def = {
+    fetch: {
+      url: [],
+      xhr: []
+    },
+    dataTypeMap: {
+      'application/json': 'json',
+      'application/ld+json': 'json',
+      'text/': 'text',
+      'application/xml': 'text'
+    },
+    request: {
+      method: true,
+      body: true,
+      timeout: true,
+      contentType: true,
+      dataType: true,
+      mode: true,
+      redirect: true,
+      referrer: true,
+      integrity: true,
+      progress: true,
+      credentials: true,
+      cache: true,
+      Response: true,
+      headers: function headers(target, _headers) {
+        target.headers = new Headers(target.headers, _headers);
+      },
+      pipelets: function pipelets(target, _pipelets) {
+        var targetPipelets = target.pipelets = target.pipelets || {};
+        _pipelets = _pipelets || {};
+        target.pipelets = {
+          before: (_pipelets.before || []).concat(targetPipelets.before || []),
+          after: (_pipelets.after || []).concat(targetPipelets.after || []),
+          afterSuccess: (_pipelets.afterSuccess || []).concat(targetPipelets.afterSuccess || []),
+          afterFailure: (_pipelets.afterFailure || []).concat(targetPipelets.afterFailure || [])
+        };
+      }
+    }
+  };
+
+  function match(ct) {
+    if (!ct) {
+      return null;
+    }
+    var key = Object.keys(def.dataTypeMap).find(function (key) {
+      return ct.startsWith(key);
+    });
+    return key ? def.dataTypeMap[key] : null;
+  }
+
+  var Response = function (_Body) {
+    _inherits(Response, _Body);
+
+    function Response(body) {
+      var _ref = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+      var status = _ref.status;
+      var statusText = _ref.statusText;
+      var headers = _ref.headers;
+      var url = _ref.url;
+      var error = _ref.error;
+      var dataType = _ref.dataType;
+
+      _classCallCheck(this, Response);
+
+      var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Response).call(this));
+
+      _this.body = body;
+      _this.status = status;
+      _this.statusText = statusText;
+      _this.headers = headers;
+      _this.url = url;
+      _this.error = error || null;
+      _this.dataType = dataType;
+      return _this;
     }
 
     _createClass(Response, [{
-      key: 'url',
-      get: function get() {
-        return this.request.url;
+      key: 'clone',
+      value: function clone() {
+        return new this.constructor(this.body, {
+          status: this.status,
+          statusText: this.statusText,
+          headers: this.headers,
+          url: this.url,
+          error: this.error,
+          dataType: this.dataType
+        });
       }
+
+      // autoconverts body based on the dataType or the response's contentType
+      // dataType is determined in the following order
+      // - the dataType field on a request
+      // - if the response is a blob, by the blobs content type
+      // - content type in the response header
+
     }, {
-      key: 'opts',
-      get: function get() {
-        return this.request.opts;
-      }
-    }, {
-      key: 'factory',
-      get: function get() {
-        return this.request.factory;
-      }
-    }, {
-      key: 'method',
-      get: function get() {
-        return this.request.method;
+      key: 'auto',
+      value: function auto() {
+        var _this2 = this;
+
+        var dataType = undefined;
+        if (this.dataType) {
+          dataType = this.dataType;
+        } else if (Blob.prototype.isPrototypeOf(this.body)) {
+          dataType = match(this.body.type);
+        } else if (this.headers.get('content-type')) {
+          var contentType = this.headers.get('content-type').split(/ *; */).shift();
+          dataType = match(contentType);
+        }
+
+        if (dataType) {
+          return this.convert(dataType).catch(function (err) {
+            // Set error and reject the response when convertion fails
+            _this2.error = err;
+            return Promise.reject(_this2);
+          });
+        } else {
+          return Promise.resolve(this.body);
+        }
       }
     }, {
       key: 'ok',
       get: function get() {
-        return !this.error;
-      }
-    }, {
-      key: 'response',
-      get: function get() {
-        return !('response' in this.xhr) ? this.xhr.responseText : this.xhr.response;
-      }
-    }, {
-      key: 'status',
-      get: function get() {
-        return this.xhr.status;
-      }
-    }, {
-      key: 'statusText',
-      get: function get() {
-        return this.xhr.statusText;
-      }
-    }, {
-      key: 'contentType',
-      get: function get() {
-        if (this.headers['content-type']) {
-          return this.headers['content-type'].split(/ *; */).shift(); // char set
-        } else {
-            return null;
-          }
+        // Success: status between 200 and 299 or 304
+        // Failure: status below 200 or beyond 299 excluding 304
+        return this.status >= 200 && this.status < 300 || this.status === 304;
       }
     }]);
 
     return Response;
-  }();
+  }(Body);
 
-  var Pajax = function (_Configurator) {
-    _inherits(Pajax, _Configurator);
+  function pipe(pipelets, o) {
+    var pipe = Promise.resolve(o);
+    (pipelets || []).forEach(function (pipelet) {
+      // chain together
+      pipe = pipe.then(pipelet);
+    });
+    return pipe;
+  }
 
-    function Pajax() {
+  function fetch(url, init) {
+    var _this = this;
+
+    var _ref = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+    var returnType = _ref.returnType;
+
+    var req = undefined;
+    if (url instanceof Request) {
+      req = url;
+    } else {
+      req = new Request(url, init);
+    }
+
+    // The XMLHttpRequest object is recreated at every request to defeat caching problems in IE
+    var xhr = undefined;
+    try {
+      xhr = new XMLHttpRequest();
+    } catch (e) {
+      throw 'Could not create XMLHttpRequest object';
+    }
+
+    var _ref2 = req.pipelets || {};
+
+    var before = _ref2.before;
+    var after = _ref2.after;
+    var afterSuccess = _ref2.afterSuccess;
+    var afterFailure = _ref2.afterFailure;
+
+    // Resolve before pipelets
+
+    var promise = pipe(before, req).then(function (req) {
+      return new Promise(function (resolve, reject) {
+        var url = req.url;
+
+        if (typeof url !== 'string') {
+          throw 'URL required for request';
+        }
+
+        def.fetch.url.forEach(function (urlHandler) {
+          url = urlHandler(url, req);
+        });
+
+        var method = req.method || 'GET';
+
+        xhr.open(method, url, true);
+
+        def.fetch.xhr.forEach(function (xhrHandler) {
+          xhrHandler(xhr, req);
+        });
+
+        // Add custom headers
+        if (req.headers) {
+          req.headers.keys().forEach(function (key) {
+            xhr.setRequestHeader(key, req.headers.get(key));
+          });
+        }
+
+        // Register upload progress listener
+        if (req.progress && xhr.upload) {
+          xhr.upload.addEventListener('progress', function () {
+            for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+              args[_key] = arguments[_key];
+            }
+
+            req.progress.apply(req, [_this].concat(args));
+          }, false);
+        }
+
+        // Set the timeout
+        if (typeof req.timeout === 'number') {
+          xhr.timeout = req.timeout;
+        }
+
+        // Set withCredentials
+        if (req.credentials === 'include') {
+          xhr.withCredentials = true;
+        }
+
+        // Caching
+        if (req.cache) {
+          xhr.setRequestHeader('cache-control', req.cache);
+        }
+
+        // Use blob whenever possible
+        if ('responseType' in xhr) {
+          xhr.responseType = 'blob';
+        }
+
+        var xhrCallback = function xhrCallback(error) {
+          var headers = new Headers(xhr.getAllResponseHeaders());
+          var resBody = !('response' in xhr) ? xhr.responseText : xhr.response;
+
+          var resInit = {
+            headers: headers,
+            status: xhr.status,
+            statusText: xhr.statusText,
+            dataType: req.dataType,
+            error: error,
+            url: url
+          };
+
+          var ResponseCtor = req.Response || Response;
+          resolve(new ResponseCtor(resBody, resInit, { error: error, url: url }));
+        };
+
+        // Callback for errors
+        xhr.onerror = function () {
+          xhrCallback('Network error');
+        };
+
+        // Callback for timeouts
+        xhr.ontimeout = function () {
+          xhrCallback('Timeout');
+        };
+
+        // Callback for document loaded.
+        xhr.onload = function () {
+          xhrCallback();
+        };
+
+        var contentType = req.contentType;
+        var reqBodyP = undefined;
+
+        // Fallback to json if body is object and no content type is set
+        if (!contentType && req.body && typeof req.body === 'object') {
+          contentType = 'application/json';
+          reqBodyP = req.text();
+        } else {
+          reqBodyP = Promise.resolve(req.body);
+        }
+
+        reqBodyP.then(function (reqBody) {
+          // Add content type header only when body is attached
+          if (reqBody !== undefined && contentType) {
+            xhr.setRequestHeader('Content-Type', contentType);
+          }
+
+          xhr.send(reqBody);
+        }, function (err) {
+          xhrCallback('Invalid request body');
+        });
+      });
+    }).then(function (res) {
+      // Resolve after pipelets
+      return pipe(after, res);
+    }, function (res) {
+      // Resolve after pipelets and reject afterwars
+      return pipe(after, res).then(function (res) {
+        return Promise.reject(res);
+      });
+    }).then(function (res) {
+      // Resolve or reject based on error
+      if (res.error) {
+        return Promise.reject(res);
+      } else {
+        return Promise.resolve(res);
+      }
+    }).then(function (res) {
+      // Still not rejected? Resolve afterSuccess
+      return pipe(afterSuccess, res);
+    }, function (res) {
+      if (res instanceof Response) {
+        // When any pipelet rejects with a response object
+        // resolve the afterFailure pipelets but still reject
+        return pipe(afterFailure, res).then(function (res) {
+          return Promise.reject(res);
+        });
+      } else {
+        // Otherwise just pass through the error
+        return Promise.reject(res);
+      }
+    });
+
+    if (returnType === 'meta') {
+      return {
+        xhr: xhr,
+        promise: promise
+      };
+    } else {
+      return promise;
+    }
+  }
+
+  var _defineProperty = (function (obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  })
+
+  var operators = {
+    before: function before(func) {
+      return this.clone({ 'pipelets': { before: [func] } });
+    },
+    after: function after(func) {
+      return this.clone({ 'pipelets': { after: [func] } });
+    },
+    afterSuccess: function afterSuccess(func) {
+      return this.clone({ 'pipelets': { afterSuccess: [func] } });
+    },
+    afterFailure: function afterFailure(func) {
+      return this.clone({ 'pipelets': { afterFailure: [func] } });
+    },
+    setTimeout: function setTimeout(timeout) {
+      return this.clone({ 'timeout': timeout });
+    },
+    type: function type(contentType) {
+      return this.clone({ 'contentType': contentType });
+    },
+    is: function is(method) {
+      return this.clone({ 'method': method });
+    },
+    onProgress: function onProgress(progressCb) {
+      return this.clone({ 'progress': progressCb });
+    },
+    withCredentials: function withCredentials() {
+      return this.clone({
+        'credentials': 'include'
+      });
+    },
+    noCache: function noCache(_noCache) {
+      return this.clone({
+        'cache': _noCache === false ? 'default' : 'no-cache'
+      });
+    },
+    header: function header(_header, value) {
+      if (typeof _header === 'string' && value !== undefined) {
+        return this.clone({ headers: _defineProperty({}, _header, value) });
+      } else if (typeof _header === 'string' && value === undefined) {
+        return this.clone({ headers: _defineProperty({}, _header, undefined) });
+      } else if (typeof _header === 'object') {
+        return this.clone({ headers: _header });
+      }
+      return this;
+    },
+    accept: function accept(ct) {
+      return this.header('Accept', ct);
+    },
+    attach: function attach(body) {
+      return this.clone({ 'body': body });
+    },
+    asJSON: function asJSON() {
+      return this.clone({ 'dataType': 'json' });
+    },
+    asBlob: function asBlob() {
+      return this.clone({ 'dataType': 'blob' });
+    },
+    asText: function asText() {
+      return this.clone({ 'dataType': 'text' });
+    },
+    asArrayBuffer: function asArrayBuffer() {
+      return this.clone({ 'dataType': 'arrayBuffer' });
+    }
+  };
+
+  var Request = function (_Body) {
+    _inherits(Request, _Body);
+
+    function Request(url) {
+      for (var _len = arguments.length, inits = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        inits[_key - 1] = arguments[_key];
+      }
+
+      _classCallCheck(this, Request);
+
+      var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Request).call(this));
+
+      if (url instanceof Request) {
+        _this.url = url.url;
+        inits = [url].concat(_toConsumableArray(inits));
+      } else if (typeof url === 'string') {
+        _this.url = url;
+      }
+
+      // Assign request options
+      var options = def.request;
+      inits.forEach(function (init) {
+        init = init || {};
+        Object.keys(options).forEach(function (key) {
+          if (typeof options[key] === 'function') {
+            options[key](_this, init[key]);
+          } else if (init[key]) {
+            _this[key] = init[key];
+          }
+        });
+      });
+      return _this;
+    }
+
+    _createClass(Request, [{
+      key: 'clone',
+      value: function clone(init) {
+        return new this.constructor(this, init);
+      }
+    }, {
+      key: 'spawn',
+      value: function spawn(url, init) {
+        if (url instanceof Request) {
+          return new this.constructor(this, url);
+        } else {
+          return new this.constructor(url, this, init);
+        }
+      }
+    }, {
+      key: 'checkStatus',
+      value: function checkStatus$$() {
+        return this.after(checkStatus());
+      }
+    }, {
+      key: 'fetch',
+      value: function fetch$$() {
+        return fetch(this);
+      }
+    }]);
+
+    return Request;
+  }(Body);
+
+  Object.assign(Request.prototype, operators);
+
+  var Pajax = function () {
+    function Pajax(init) {
       _classCallCheck(this, Pajax);
 
-      return _possibleConstructorReturn(this, Object.getPrototypeOf(Pajax).apply(this, arguments));
+      var RequestCtor = this.constructor.Request || Request;
+      var ResponseCtor = this.constructor.Response || Response;
+      this.req = new RequestCtor(null, init, { Response: ResponseCtor });
     }
 
     _createClass(Pajax, [{
       key: 'get',
       value: function get(url) {
-        var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+        var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-        opts.method = 'GET';
-        return this.request(url, opts);
-      }
-    }, {
-      key: 'head',
-      value: function head(url) {
-        var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-        opts.method = 'HEAD';
-        return this.request(url, opts);
-      }
-    }, {
-      key: 'post',
-      value: function post(url) {
-        var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-        opts.method = 'POST';
-        return this.request(url, opts);
-      }
-    }, {
-      key: 'put',
-      value: function put(url) {
-        var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-        opts.method = 'PUT';
-        return this.request(url, opts);
-      }
-    }, {
-      key: 'patch',
-      value: function patch(url) {
-        var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-        opts.method = 'PATCH';
-        return this.request(url, opts);
+        return this.request(url, init).is('GET').checkStatus().fetch().then(function (res) {
+          return res.auto();
+        });
       }
     }, {
       key: 'delete',
       value: function _delete(url) {
-        var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+        var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-        opts.method = 'DELETE';
-        return this.request(url, opts);
-      }
-    }, {
-      key: 'del',
-      value: function del() {
-        return this.delete.apply(this, arguments);
-      }
-    }, {
-      key: 'request',
-      value: function request(url, opts) {
-        return this.createRequest(url, this.opts, this).assignOpts(opts).checkStatus();
-      }
-    }, {
-      key: 'createRequest',
-      value: function createRequest(url, opts, factory) {
-        var RequestClass = this.constructor.Request || Request;
-        return new RequestClass(url, opts, factory || this);
-      }
-    }, {
-      key: 'createResponse',
-      value: function createResponse(req, xhr) {
-        var ResponseClass = this.constructor.Response || Response;
-        return new ResponseClass(req, xhr);
-      }
-    }, {
-      key: 'fetch',
-      value: function fetch(url, opts) {
-        var _this2 = this;
-
-        var req = undefined;
-        if (url instanceof Request) {
-          req = url;
-        } else {
-          req = this.createRequest(url, this.opts, this).assignOpts(opts);
-        }
-
-        // The XMLHttpRequest object is recreated at every request to defeat caching problems in IE
-        var xhr = undefined;
-        try {
-          xhr = new XMLHttpRequest();
-        } catch (e) {
-          throw 'Could not create XMLHttpRequest object';
-        }
-
-        // Resolve before pipelets
-        return Promise.resolve().then(function () {
-          return resolvePipelets(req.pipelets.before || [], req);
-        }).then(function () {
-          return new Promise(function (resolve, reject) {
-            var url = req.url;
-
-            var method = req.method || 'GET';
-
-            xhr.open(method, url, true);
-
-            var body = req.body;
-
-            // Try to serialize body
-            if (body && typeof body === 'object') {
-              try {
-                var serialize = serializers[req.contentType];
-                if (req.contentType && serializers[req.contentType]) {
-                  body = serializers[req.contentType](body);
-                } else if (req.contentType === undefined) {
-                  body = JSON.stringify(body);
-                  xhr.setRequestHeader('Content-Type', 'application/json');
-                }
-              } catch (ex) {
-                var res = _this2.createResponse(req, xhr);
-                res.error = 'Invalid body';
-                reject(res);
-              }
-            }
-
-            // Add content type header only when body is attached
-            if (body !== undefined && req.contentType) {
-              xhr.setRequestHeader('Content-Type', req.contentType);
-            }
-
-            try {
-              // Default response type is 'text'
-              xhr.responseType = req.responseType ? req.responseType.toLowerCase() : 'text';
-            } catch (err) {
-              // Fallback to type processor
-              req.responseType = null;
-            }
-
-            // Add custom headers
-            if (req.headers) {
-              Object.keys(req.headers).forEach(function (key) {
-                xhr.setRequestHeader(key, req.headers[key]);
-              });
-            }
-
-            // Register upload progress listener
-            if (req.progress && xhr.upload) {
-              xhr.upload.addEventListener('progress', function () {
-                var _req;
-
-                for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-                  args[_key] = arguments[_key];
-                }
-
-                (_req = req).progress.apply(_req, [_this2].concat(args));
-              }, false);
-            }
-
-            // Set the timeout
-            if (typeof req.timeout === 'number') {
-              xhr.timeout = req.timeout;
-            }
-
-            // Set withCredentials
-            if (req.credentials === 'include') {
-              xhr.withCredentials = true;
-            }
-
-            // Callback for errors
-            xhr.onerror = function () {
-              var res = _this2.createResponse(req, xhr);
-              res.error = 'Network error';
-              resolve(res);
-            };
-
-            // Callback for timeouts
-            xhr.ontimeout = function () {
-              var res = _this2.createResponse(req, xhr);
-              res.error = 'Timeout';
-              resolve(res);
-            };
-
-            // Callback for document loaded.
-            xhr.onload = function () {
-              var res = _this2.createResponse(req, xhr);
-              resolve(res);
-            };
-
-            xhr.send(body);
-          });
-        })
-        // Pipelet for marking unsucessfull requests
-        .then(function (res) {
-          // Success
-          return resolvePipelets(req.pipelets.after, res);
-        }).then(function (res) {
-          if (res.error) {
-            // Resolve afterFailure pipelets
-            return resolvePipelets(req.pipelets.afterFailure, res);
-          } else {
-            // Resolve afterSuccess pipelets
-            return resolvePipelets(req.pipelets.afterSuccess, res);
-          }
-        }, function (res) {
-          // When an 'after' pipelet rejects with a response object
-          // resolve the afterFailure pipelets
-          if (res instanceof Response) {
-            return resolvePipelets(req.pipelets.afterFailure, res);
-          } else {
-            return Promise.reject(res);
-          }
-        }).then(function (res) {
-          // Resolve or reject based on error
-          if (res.error) {
-            return Promise.reject(res);
-          } else {
-            return Promise.resolve(res);
-          }
+        return this.request(url, init).is('DELETE').checkStatus().fetch().then(function (res) {
+          return res.auto();
         });
       }
-    }], [{
-      key: 'request',
-      value: function request() {
-        var _ref;
+    }, {
+      key: 'post',
+      value: function post(url, body) {
+        var init = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
-        return (_ref = new this()).request.apply(_ref, arguments);
+        return this.request(url, init).is('POST').attach(body).checkStatus().fetch().then(function (res) {
+          return res.auto();
+        });
+      }
+    }, {
+      key: 'put',
+      value: function put(url, body) {
+        var init = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+        return this.request(url, init).is('PUT').attach(body).checkStatus().fetch().then(function (res) {
+          return res.auto();
+        });
+      }
+    }, {
+      key: 'patch',
+      value: function patch(url, body) {
+        var init = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+        return this.request(url, init).is('PATCH').attach(body).checkStatus().fetch().then(function (res) {
+          return res.auto();
+        });
+      }
+    }, {
+      key: 'request',
+      value: function request(url, init) {
+        // Merge defaults
+        return this.req.spawn(url, init);
       }
     }, {
       key: 'fetch',
-      value: function fetch() {
-        var _ref2;
+      value: function fetch$$(url, init) {
+        // Merge defaults
+        return fetch(this.req.spawn(url, init));
+      }
+    }, {
+      key: 'clone',
+      value: function clone(init) {
+        return new this.constructor(this.req.clone(init));
+      }
+    }, {
+      key: 'JSON',
+      value: function JSON(force) {
+        var ct = 'application/json';
+        return this.header('Accept', ct).asJSON();
+      }
+    }], [{
+      key: 'fetch',
+      value: function fetch$$() {
+        return fetch.apply(undefined, arguments);
+      }
+    }, {
+      key: 'request',
+      value: function request() {
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+          args[_key] = arguments[_key];
+        }
 
-        return (_ref2 = new this()).fetch.apply(_ref2, arguments);
+        return new (Function.prototype.bind.apply(Request, [null].concat(args)))();
       }
     }, {
       key: 'get',
       value: function get() {
-        var _ref3;
+        var _ref;
 
-        return (_ref3 = new this()).get.apply(_ref3, arguments);
-      }
-    }, {
-      key: 'head',
-      value: function head() {
-        var _ref4;
-
-        return (_ref4 = new this()).head.apply(_ref4, arguments);
+        return (_ref = new this()).get.apply(_ref, arguments);
       }
     }, {
       key: 'post',
       value: function post() {
-        var _ref5;
+        var _ref2;
 
-        return (_ref5 = new this()).post.apply(_ref5, arguments);
+        return (_ref2 = new this()).post.apply(_ref2, arguments);
       }
     }, {
       key: 'put',
       value: function put() {
-        var _ref6;
+        var _ref3;
 
-        return (_ref6 = new this()).put.apply(_ref6, arguments);
+        return (_ref3 = new this()).put.apply(_ref3, arguments);
       }
     }, {
       key: 'delete',
       value: function _delete() {
-        var _ref7;
+        var _ref4;
 
-        return (_ref7 = new this()).delete.apply(_ref7, arguments);
+        return (_ref4 = new this()).delete.apply(_ref4, arguments);
       }
     }, {
       key: 'patch',
       value: function patch() {
-        var _ref8;
+        var _ref5;
 
-        return (_ref8 = new this()).patch.apply(_ref8, arguments);
+        return (_ref5 = new this()).patch.apply(_ref5, arguments);
       }
     }, {
-      key: 'del',
-      value: function del() {
-        return this.delete.apply(this, arguments);
+      key: 'checkStatus',
+      value: function checkStatus$$() {
+        return checkStatus.apply(undefined, arguments);
       }
     }]);
 
     return Pajax;
-  }(Configurator);
+  }();
 
+  Object.assign(Pajax.prototype, operators);
+
+  Pajax.def = def;
+  Pajax.Headers = Headers;
   Pajax.Request = Request;
   Pajax.Response = Response;
-
-  var _get = (function get(object, property, receiver) {
-    if (object === null) object = Function.prototype;
-    var desc = Object.getOwnPropertyDescriptor(object, property);
-
-    if (desc === undefined) {
-      var parent = Object.getPrototypeOf(object);
-
-      if (parent === null) {
-        return undefined;
-      } else {
-        return get(parent, property, receiver);
-      }
-    } else if ("value" in desc) {
-      return desc.value;
-    } else {
-      var getter = desc.get;
-
-      if (getter === undefined) {
-        return undefined;
-      }
-
-      return getter.call(receiver);
-    }
-  })
-
-  var ct = 'application/json';
-
-  var PajaxJSON = function (_Pajax) {
-    _inherits(PajaxJSON, _Pajax);
-
-    function PajaxJSON() {
-      var _Object$getPrototypeO;
-
-      _classCallCheck(this, PajaxJSON);
-
-      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
-
-      var _this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(PajaxJSON)).call.apply(_Object$getPrototypeO, [this].concat(args)));
-
-      _this.setContentType(ct);
-      _this.header('Accept', ct);
-      return _this;
-    }
-
-    _createClass(PajaxJSON, [{
-      key: 'request',
-      value: function request() {
-        var _get2;
-
-        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-          args[_key2] = arguments[_key2];
-        }
-
-        var req = (_get2 = _get(Object.getPrototypeOf(PajaxJSON.prototype), 'request', this)).call.apply(_get2, [this].concat(args));
-        if (req.opts.forceJSON) {
-          req.setResponseContentType(ct);
-        }
-        return req;
-      }
-    }]);
-
-    return PajaxJSON;
-  }(Pajax);
-
-  var PajaxURLEncoded = function (_Pajax) {
-    _inherits(PajaxURLEncoded, _Pajax);
-
-    function PajaxURLEncoded() {
-      var _Object$getPrototypeO;
-
-      _classCallCheck(this, PajaxURLEncoded);
-
-      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
-
-      var _this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(PajaxURLEncoded)).call.apply(_Object$getPrototypeO, [this].concat(args)));
-
-      _this.setContentType('application/x-www-form-urlencoded');
-      return _this;
-    }
-
-    return PajaxURLEncoded;
-  }(Pajax);
-
-  // configurator
-  Pajax.Configurator = Configurator;
-
-  // custom classes
-  Pajax.URLEncoded = PajaxURLEncoded;
-  Pajax.JSON = PajaxJSON;
-
-  // helpers
-  Pajax.qsParse = qs.parse;
-  Pajax.qsStringify = qs.stringify;
-  Pajax.parseURL = parseURL;
-  Pajax.isURL = isURL;
-  Pajax.merge = merge;
-
-  // pipelets
-  Pajax.checkStatus = checkStatus;
 
   return Pajax;
 

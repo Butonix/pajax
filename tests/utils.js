@@ -1,4 +1,4 @@
-import Pajax from '../lib/pajax.js';
+import Pajax from 'pajax';
 export {Pajax};
 
 export var assert = chai.assert;

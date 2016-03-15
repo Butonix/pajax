@@ -380,17 +380,17 @@
       credentials: true,
       cache: true,
       Response: true,
-      headers: function headers(target, _headers) {
-        target.headers = new Headers(target.headers, _headers);
+      headers: function headers(_headers, reqHeaders) {
+        return new Headers(reqHeaders, _headers);
       },
-      pipelets: function pipelets(target, _pipelets) {
-        var targetPipelets = target.pipelets = target.pipelets || {};
+      pipelets: function pipelets(_pipelets, reqPipelets) {
         _pipelets = _pipelets || {};
-        target.pipelets = {
-          before: (_pipelets.before || []).concat(targetPipelets.before || []),
-          after: (_pipelets.after || []).concat(targetPipelets.after || []),
-          afterSuccess: (_pipelets.afterSuccess || []).concat(targetPipelets.afterSuccess || []),
-          afterFailure: (_pipelets.afterFailure || []).concat(targetPipelets.afterFailure || [])
+        reqPipelets = reqPipelets || {};
+        return {
+          before: (reqPipelets.before || []).concat(_pipelets.before || []),
+          after: (reqPipelets.after || []).concat(_pipelets.after || []),
+          afterSuccess: (reqPipelets.afterSuccess || []).concat(_pipelets.afterSuccess || []),
+          afterFailure: (reqPipelets.afterFailure || []).concat(_pipelets.afterFailure || [])
         };
       }
     }
@@ -787,7 +787,7 @@
         init = init || {};
         Object.keys(options).forEach(function (key) {
           if (typeof options[key] === 'function') {
-            options[key](_this, init[key]);
+            _this[key] = options[key](init[key], _this[key]);
           } else if (init[key]) {
             _this[key] = init[key];
           }

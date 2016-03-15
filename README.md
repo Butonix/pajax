@@ -7,9 +7,33 @@ It is very close to the [Fetch](https://fetch.spec.whatwg.org/) standard.
 
 ## Installation
 
+### jspm
 ```sh
-jspm install github:n-fuse/pajax
+jspm install github:n-fuse/pajax@0.5
 ```
+
+```javascript
+import Pajax from 'pajax';
+```
+
+### npm
+```sh
+jspm install n-fuse/pajax#0.5
+```
+
+```javascript
+var Pajax = require('pajax');
+```
+
+### global
+
+Use `dist/pajax.js`
+
+```
+<script src="pajax.js"></script>
+```
+
+
 ## Basic usage
 
 ### Fetching data via fetch()
@@ -17,8 +41,6 @@ jspm install github:n-fuse/pajax
 The basic fetch() is similar to the standard [Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch) specification
 
 ```javascript
-import Pajax from 'pajax';
-
 Pajax.fetch(url, opts)
      .then(res=>{
        res; // response object
@@ -113,7 +135,6 @@ The options are very similar to the [Fetch](https://fetch.spec.whatwg.org/) opti
 A Pajax instance allows to modify the default options for fetch() requests.
 
 ```javascript
-import Pajax from 'pajax';
 let pajax = new Pajax({cache: 'no-cache'});
 
 // includes no-cache header

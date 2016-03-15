@@ -18,7 +18,7 @@ import Pajax from 'pajax';
 
 ### npm
 ```sh
-jspm install n-fuse/pajax#0.5
+npm install n-fuse/pajax#0.5
 ```
 
 ```javascript
@@ -32,7 +32,6 @@ Use `dist/pajax.js`
 ```
 <script src="pajax.js"></script>
 ```
-
 
 ## Basic usage
 
@@ -68,7 +67,7 @@ Pajax.fetch(url, opts)
      });
 ```
 
-### Fetching/Sending data via get(), set(), post(), put(), patch(), delete()
+### Fetching/Sending data via get(), post(), put(), patch(), delete()
 
 There are some built-in helpers for common HTTP methods.
 Helper methods are always using Pajax.checkStatus() and resolve with the
@@ -168,12 +167,18 @@ Instead of calling `Pajax.fetch(request)` you can call fetch directly on a reque
 without an argument.
 
 ```javascript
-let req = pajax.request(url, opts);
-
-req.fetch().then(...)
+pajax.request(url, opts).fetch().then(res=>{ ... });
 // is an alias for
-Pajax.fetch(req).then(...);
+let req = pajax.request(url, opts);
+Pajax.fetch(req).then(res=>{ ... });
+```
 
+Same goes for the get(), post(), put() etc. helpers
+
+```javascript
+pajax.request(url, opts).get().then(body=>{ ... })
+
+pajax.request(url, opts).post().then(body=>{ ... })
 ```
 
 ### Responses
@@ -199,10 +204,9 @@ let req1 = pajax.request('/url');
 let req2 = req1.accept('application/json');
 let req3 = req2.header('Accept-Language', 'en');
 let req4 = req3.header('Authentication', token);
-let req5 = req4.checkStatus();
 
 // Request to /url with Accept, Accept-Language and Authentication headers
-req5.fetch().then(res=>{
+req4.fetch().then(res=>{
 
 });
 
@@ -211,7 +215,6 @@ pajax.request('/url')
      .accept('application/json')
      .header('Accept-Language', 'en')
      .header('Authentication', token)
-     .checkStatus()
      .fetch()
      .then(res=>{
 
@@ -265,11 +268,8 @@ Let's add a method for an authenticated POST in this example:
 class MyPajax extends Pajax {
   authPost(url, data, token) {
     return this.request(url, init)
-               .setMethod('POST')
                .header('Authorization', token)
-               .checkStatus()
-               .fetch()
-               .then(res=>res.auto());
+               .post();
   }
 }
 ...
@@ -294,19 +294,14 @@ class MyPajax extends Pajax {
   aget(...args) {
     return this.request(...args)
                .authenticate()
-               .checkStatus()
-               .fetch()
-               .then(res=>res.auto());
+               .get();
   }
   // Override delete()
   // All DELETE requests should be authenticated
   delete(...args) {
     return this.request(...args)
-               .is('DELETE')
                .authenticate()
-               .checkStatus()
-               .fetch()
-               .then(res=>res.auto());
+               .delete();
   }
 }
 
@@ -334,32 +329,22 @@ let pajax = new MyPajax({auth});
 
 // token added by getAuth()
 pajax.aget(url)
-     .then(body => {
-       ...
-     });
+     .then(body => { ... });
 
 // no token added
 pajax.get(url)
      .fetch()
-     .then(res => {
-       ...
-     });
+     .then(res => { ... });
 
 // token added manually
 pajax.request()
-     .is('POST')
      .authenticate() // Adds bearer token to request
-     .fetch()
-     .then(res => {
-       ...
-     });
+     .post()
+     .then(body => { ... });
 
 // token added by delete() override
 pajax.delete(url)
-     .fetch()
-     .then(body => {
-       ...
-     });     
+     .then(body => { ... });
 ```
 ### Request/Response transformation operators
 

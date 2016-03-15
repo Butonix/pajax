@@ -9,6 +9,14 @@ describe('get', function() {
          }, noCall).then(done, done);
   });
 
+  it('should get text body', function(done) {
+    pajax.request('http://127.0.0.1:3500/ok')
+         .get()
+         .then(body => {
+           assert.strictEqual(body, 'ok');
+         }, noCall).then(done, done);
+  });
+
   it('should get json response', function(done) {
     pajax.get('http://127.0.0.1:3500/json')
          .then(body => {

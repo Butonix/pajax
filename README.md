@@ -266,8 +266,9 @@ Let's add a method for an authenticated POST in this example:
 
 ```javascript
 class MyPajax extends Pajax {
-  authPost(url, data, token) {
-    return this.request(url, init)
+  authPost(url, body, token) {
+    return this.request(url)
+               .attach(body)
                .header('Authorization', token)
                .post();
   }
@@ -276,8 +277,7 @@ class MyPajax extends Pajax {
 
 import auth from 'auth';
 let pajax = new MyPajax();
-pajax.authPost(url, data, auth.token);
-
+pajax.authPost(url, {foo:1}, auth.token);
 ```
 
 ## Customizing the Pajax classes

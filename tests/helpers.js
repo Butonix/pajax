@@ -26,17 +26,19 @@ describe('get', function() {
 
 describe('post/put/patch', function() {
   var pajax = new Pajax();
-  it('should post data', function(done) {
-    pajax.post(baseURL + '/data', 'foo')
+  it('should patch data', function(done) {
+    pajax.patch(baseURL + '/data', 'foo')
          .then(body => {
-           assert.strictEqual(body, 'POST: foo');
+           assert.strictEqual(body, 'PATCH: foo');
          }, noCall).then(done, done);
-
+  });
+  it('should put data', function(done) {
     pajax.put(baseURL + '/data', 'foo')
          .then(body => {
            assert.strictEqual(body, 'PUT: foo');
          }, noCall).then(done, done);
-
+  });
+  it('should put data', function(done) {
     pajax.patch(baseURL + '/data', 'foo')
          .then(body => {
            assert.strictEqual(body, 'PATCH: foo');

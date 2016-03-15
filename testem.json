@@ -1,7 +1,7 @@
 {
   "serve_files": [
     "node_modules/phantomjs-polyfill/bind-polyfill.js",
-    "node_modules/promise-polyfill/Promise.js",
+    "node_modules/es6-shim/es6-shim.js",
     "bundle.tmp.js"
   ],
   "src_files": [

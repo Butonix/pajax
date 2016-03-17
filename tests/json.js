@@ -52,10 +52,10 @@ describe('JSON', function() {
 });
 
 describe('Pajax.JSON', function() {
-  var pajax = new Pajax().JSON();
+  var pajax = new Pajax().json();
   it('should get parsed json', function(done) {
     // JSON as contentType text
-    pajax.get(baseURL + '/jsontext')
+    pajax.getBody(baseURL + '/jsontext')
          .then(body => {
            assert.deepEqual(body, {'foo': 'bar'});
          }, noCall).then(done, done);
@@ -63,6 +63,7 @@ describe('Pajax.JSON', function() {
 
   it('should post json object', function(done) {
     pajax.post(baseURL + '/json', {post: 'json'})
+         .then(res=>res.auto())
          .then(body => {
            assert.deepEqual(body, {'post': 'json'});
          }, noCall).then(done, done);
@@ -80,7 +81,7 @@ describe('Pajax.JSON', function() {
   });
 
   it('should reject invalid json', function(done) {
-    pajax.get(baseURL + '/ok')
+    pajax.getBody(baseURL + '/ok')
          .then(noCall, res => {
            assert.strictEqual(res.error, 'Invalid JSON');
          }).then(done, done);

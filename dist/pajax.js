@@ -26,16 +26,6 @@
     return Constructor;
   };
 
-  var _toConsumableArray = (function (arr) {
-    if (Array.isArray(arr)) {
-      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
-        arr2[i] = arr[i];
-      }return arr2;
-    } else {
-      return Array.from(arr);
-    }
-  })
-
   var _possibleConstructorReturn = (function (self, call) {
     if (!self) {
       throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
@@ -765,38 +755,42 @@
   var Request = function (_Body) {
     _inherits(Request, _Body);
 
-    function Request(url) {
-      for (var _len = arguments.length, inits = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-        inits[_key - 1] = arguments[_key];
-      }
-
+    function Request(url, init) {
       _classCallCheck(this, Request);
 
       var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Request).call(this));
 
       if (url instanceof Request) {
         _this.url = url.url;
-        inits = [url].concat(_toConsumableArray(inits));
+        _this.assign(url);
       } else if (typeof url === 'string') {
         _this.url = url;
       }
-
-      // Assign request options
-      var options = def.request;
-      inits.forEach(function (init) {
-        init = init || {};
-        Object.keys(options).forEach(function (key) {
-          if (typeof options[key] === 'function') {
-            _this[key] = options[key](init[key], _this[key]);
-          } else if (init[key]) {
-            _this[key] = init[key];
-          }
-        });
-      });
+      if (typeof init === 'object') {
+        _this.assign(init);
+      }
       return _this;
     }
 
     _createClass(Request, [{
+      key: 'assign',
+      value: function assign() {
+        var _this2 = this;
+
+        var init = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+        // Assign request options
+        var options = def.request;
+        Object.keys(options).forEach(function (key) {
+          if (typeof options[key] === 'function') {
+            _this2[key] = options[key](init[key], _this2[key]);
+          } else if (init[key]) {
+            _this2[key] = init[key];
+          }
+        });
+        return this;
+      }
+    }, {
       key: 'clone',
       value: function clone(init) {
         return new this.constructor(this, init);
@@ -804,11 +798,14 @@
     }, {
       key: 'spawn',
       value: function spawn(url, init) {
+        var req = new this.constructor(this);
         if (url instanceof Request) {
-          return new this.constructor(this, url);
-        } else {
-          return new this.constructor(url, this, init);
+          req.assign(url);
+        } else if (typeof url === 'string') {
+          req.url = url;
+          return req.assign(init);
         }
+        return req.assign(init);
       }
     }, {
       key: 'checkStatus',
@@ -819,6 +816,73 @@
       key: 'fetch',
       value: function fetch$$() {
         return fetch(this);
+      }
+    }, {
+      key: 'get',
+      value: function get() {
+        return this.is('GET').checkStatus().fetch();
+      }
+    }, {
+      key: 'getAuto',
+      value: function getAuto() {
+        return this.is('GET').checkStatus().fetch().then(function (res) {
+          return res.auto();
+        });
+      }
+    }, {
+      key: 'getJSON',
+      value: function getJSON() {
+        return this.is('GET').checkStatus().fetch().then(function (res) {
+          return res.json();
+        });
+      }
+    }, {
+      key: 'getText',
+      value: function getText() {
+        return this.is('GET').checkStatus().fetch().then(function (res) {
+          return res.text();
+        });
+      }
+    }, {
+      key: 'getBlob',
+      value: function getBlob() {
+        return this.is('GET').checkStatus().fetch().then(function (res) {
+          return res.blob();
+        });
+      }
+    }, {
+      key: 'getArrayBuffer',
+      value: function getArrayBuffer() {
+        return this.is('GET').checkStatus().fetch().then(function (res) {
+          return res.arrayBuffer();
+        });
+      }
+    }, {
+      key: 'getFormData',
+      value: function getFormData() {
+        return this.is('GET').checkStatus().fetch().then(function (res) {
+          return res.formData();
+        });
+      }
+    }, {
+      key: 'delete',
+      value: function _delete() {
+        return this.is('DELETE').checkStatus().fetch();
+      }
+    }, {
+      key: 'post',
+      value: function post() {
+        return this.is('POST').checkStatus().fetch();
+      }
+    }, {
+      key: 'put',
+      value: function put() {
+        return this.is('PUT').checkStatus().fetch();
+      }
+    }, {
+      key: 'patch',
+      value: function patch() {
+        return this.is('PATCH').checkStatus().fetch();
       }
     }]);
 
@@ -833,7 +897,7 @@
 
       var RequestCtor = this.constructor.Request || Request;
       var ResponseCtor = this.constructor.Response || Response;
-      this.req = new RequestCtor(null, init, { Response: ResponseCtor });
+      this.req = new RequestCtor(null, init).assign({ Response: ResponseCtor });
     }
 
     _createClass(Pajax, [{
@@ -841,45 +905,77 @@
       value: function get(url) {
         var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-        return this.request(url, init).is('GET').checkStatus().fetch().then(function (res) {
-          return res.auto();
-        });
+        return this.request(url, init).get();
+      }
+    }, {
+      key: 'getAuto',
+      value: function getAuto(url) {
+        var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+        return this.request(url, init).getAuto();
+      }
+    }, {
+      key: 'getJSON',
+      value: function getJSON(url) {
+        var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+        return this.request(url, init).getJSON();
+      }
+    }, {
+      key: 'getText',
+      value: function getText(url) {
+        var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+        return this.request(url, init).getText();
+      }
+    }, {
+      key: 'getBlob',
+      value: function getBlob(url) {
+        var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+        return this.request(url, init).getBlob();
+      }
+    }, {
+      key: 'getArrayBuffer',
+      value: function getArrayBuffer(url) {
+        var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+        return this.request(url, init).getArrayBuffer();
+      }
+    }, {
+      key: 'getFormData',
+      value: function getFormData(url) {
+        var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+        return this.request(url, init).getFormData();
       }
     }, {
       key: 'delete',
       value: function _delete(url) {
         var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-        return this.request(url, init).is('DELETE').checkStatus().fetch().then(function (res) {
-          return res.auto();
-        });
+        return this.request(url, init).delete();
       }
     }, {
       key: 'post',
       value: function post(url, body) {
         var init = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
-        return this.request(url, init).is('POST').attach(body).checkStatus().fetch().then(function (res) {
-          return res.auto();
-        });
+        return this.request(url, init).attach(body).post();
       }
     }, {
       key: 'put',
       value: function put(url, body) {
         var init = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
-        return this.request(url, init).is('PUT').attach(body).checkStatus().fetch().then(function (res) {
-          return res.auto();
-        });
+        return this.request(url, init).attach(body).put();
       }
     }, {
       key: 'patch',
       value: function patch(url, body) {
         var init = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
-        return this.request(url, init).is('PATCH').attach(body).checkStatus().fetch().then(function (res) {
-          return res.auto();
-        });
+        return this.request(url, init).attach(body).patch();
       }
     }, {
       key: 'request',
@@ -900,7 +996,7 @@
       }
     }, {
       key: 'JSON',
-      value: function JSON(force) {
+      value: function JSON() {
         var ct = 'application/json';
         return this.header('Accept', ct).asJSON();
       }
@@ -926,32 +1022,74 @@
         return (_ref = new this()).get.apply(_ref, arguments);
       }
     }, {
-      key: 'post',
-      value: function post() {
+      key: 'getAuto',
+      value: function getAuto() {
         var _ref2;
 
-        return (_ref2 = new this()).post.apply(_ref2, arguments);
+        return (_ref2 = new this()).getAuto.apply(_ref2, arguments);
+      }
+    }, {
+      key: 'getJSON',
+      value: function getJSON() {
+        var _ref3;
+
+        return (_ref3 = new this()).getJSON.apply(_ref3, arguments);
+      }
+    }, {
+      key: 'getText',
+      value: function getText() {
+        var _ref4;
+
+        return (_ref4 = new this()).getText.apply(_ref4, arguments);
+      }
+    }, {
+      key: 'getBlob',
+      value: function getBlob() {
+        var _ref5;
+
+        return (_ref5 = new this()).getBlob.apply(_ref5, arguments);
+      }
+    }, {
+      key: 'getArrayBuffer',
+      value: function getArrayBuffer() {
+        var _ref6;
+
+        return (_ref6 = new this()).getArrayBuffer.apply(_ref6, arguments);
+      }
+    }, {
+      key: 'getFormData',
+      value: function getFormData() {
+        var _ref7;
+
+        return (_ref7 = new this()).getFormData.apply(_ref7, arguments);
+      }
+    }, {
+      key: 'post',
+      value: function post() {
+        var _ref8;
+
+        return (_ref8 = new this()).post.apply(_ref8, arguments);
       }
     }, {
       key: 'put',
       value: function put() {
-        var _ref3;
+        var _ref9;
 
-        return (_ref3 = new this()).put.apply(_ref3, arguments);
+        return (_ref9 = new this()).put.apply(_ref9, arguments);
       }
     }, {
       key: 'delete',
       value: function _delete() {
-        var _ref4;
+        var _ref10;
 
-        return (_ref4 = new this()).delete.apply(_ref4, arguments);
+        return (_ref10 = new this()).delete.apply(_ref10, arguments);
       }
     }, {
       key: 'patch',
       value: function patch() {
-        var _ref5;
+        var _ref11;
 
-        return (_ref5 = new this()).patch.apply(_ref5, arguments);
+        return (_ref11 = new this()).patch.apply(_ref11, arguments);
       }
     }, {
       key: 'checkStatus',

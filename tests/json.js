@@ -41,9 +41,8 @@ describe('JSON', function() {
 
   it('should convert req data to json object as fallback', function(done) {
     pajax.request(baseURL + '/json')
-         .is('POST')
          .attach({post: 'json'})
-         .fetch()
+         .post()
          .then(res => res.json())
          .then(body => {
            assert.deepEqual(body, {post: 'json'});
@@ -52,10 +51,11 @@ describe('JSON', function() {
 });
 
 describe('Pajax.JSON', function() {
-  var pajax = new Pajax().json();
+  var pajax = new Pajax().JSON();
   it('should get parsed json', function(done) {
     // JSON as contentType text
-    pajax.getBody(baseURL + '/jsontext')
+    pajax.get(baseURL + '/jsontext')
+         .then(res=>res.json())
          .then(body => {
            assert.deepEqual(body, {'foo': 'bar'});
          }, noCall).then(done, done);
@@ -81,7 +81,8 @@ describe('Pajax.JSON', function() {
   });
 
   it('should reject invalid json', function(done) {
-    pajax.getBody(baseURL + '/ok')
+    pajax.get(baseURL + '/ok')
+         .then(res=>res.auto())
          .then(noCall, res => {
            assert.strictEqual(res.error, 'Invalid JSON');
          }).then(done, done);

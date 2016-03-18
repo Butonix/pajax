@@ -2,8 +2,9 @@ import {Pajax,assert,noCall,baseURL} from './utils.js';
 
 describe('get', function() {
   var pajax = new Pajax();
-  it('should get text response', function(done) {
-    pajax.getBody('http://127.0.0.1:3500/ok')
+
+  it('should get text body', function(done) {
+    pajax.getText('http://127.0.0.1:3500/ok')
          .then(body => {
            assert.strictEqual(body, 'ok');
          }, noCall).then(done, done);
@@ -11,21 +12,22 @@ describe('get', function() {
 
   it('should get text body', function(done) {
     pajax.request('http://127.0.0.1:3500/ok')
-         .getBody()
+         .getText()
          .then(body => {
            assert.strictEqual(body, 'ok');
          }, noCall).then(done, done);
   });
 
   it('should get json response', function(done) {
-    pajax.getBody('http://127.0.0.1:3500/json')
+    pajax.getJSON('http://127.0.0.1:3500/json')
          .then(body => {
            assert.deepEqual(body, { foo: 'bar' });
          }, noCall).then(done, done);
   });
 
+
   it('should reject response', function(done) {
-    pajax.getBody(baseURL + '/error')
+    pajax.getText(baseURL + '/error')
          .then(noCall, res => {
            assert.strictEqual(res.status, 500);
          }).then(done, done);

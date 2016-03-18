@@ -35,11 +35,12 @@
     "testem": "^1.0.0"
   },
   "jspm": {
+    "main": "pajax.js",
+    "name": "pajax",
     "directories": {
       "lib": "lib"
     },
-    "main": "lib/pajax.js",
-    "format": "es6",
+    "format": "esm",
     "devDependencies": {
       "plugin-babel": "npm:systemjs-plugin-babel@^0.0.8"
     }

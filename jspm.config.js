@@ -3,7 +3,12 @@ SystemJS.config({
   packages: {
     "pajax": {
       "format": "esm",
-      "main": "pajax.js"
+      "main": "pajax.js",
+      "meta": {
+        "*.js": {
+          "loader": "plugin-babel"
+        }
+      }
     }
   }
 });
@@ -11,8 +16,7 @@ SystemJS.config({
 SystemJS.config({
   packageConfigPaths: [
     "npm:@*/*.json",
-    "npm:*.json",
-    "github:*/*.json"
+    "npm:*.json"
   ],
   map: {
     "plugin-babel": "npm:systemjs-plugin-babel@0.0.8"

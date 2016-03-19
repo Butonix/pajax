@@ -5,9 +5,10 @@ describe('blob', function() {
   it('should receive the file as a blob', function(done) {
     pajax.request(baseURL + '/file.bin')
          .fetch()
-         .then(res => {
-           assert.strictEqual(res.body instanceof Blob, true);
-           assert.strictEqual(res.body.type, 'application/octet-stream');
+         .then(res => res.blob())
+         .then(body => {
+           assert.strictEqual(body instanceof Blob, true);
+           assert.strictEqual(body.type, 'application/octet-stream');
          }, noCall).then(done, done);
   });
 });

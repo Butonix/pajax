@@ -33,7 +33,7 @@ class MyPajax extends Pajax {
   }
 }
 
-MyPajax.def.request.auth = true;
+MyPajax.def.request.assign.auth = true;
 
 MyPajax.Request = class extends Pajax.Request {
   authenticate(token2) {

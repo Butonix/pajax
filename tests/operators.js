@@ -27,6 +27,7 @@ describe('operators', function() {
     assert.strictEqual(req.dataType, 'json');
     assert.strictEqual(req.progress, prcb);
     assert.strictEqual(req.timeout, 5000);
-    assert.deepEqual(req.body, {foo:'bar'});
+    // private
+    assert.deepEqual(req._body, {foo:'bar'});
   });
 });

@@ -16,7 +16,7 @@ jspm install github:n-fuse/pajax@0.5
 import Pajax from 'pajax';
 ```
 
-### npm
+### cjs
 ```sh
 npm install n-fuse/pajax#0.5
 ```
@@ -27,7 +27,7 @@ var Pajax = require('pajax');
 
 ### global
 
-Use `dist/pajax.js`
+Add `dist/pajax.js` to your scripts
 
 ```
 <script src="pajax.js"></script>

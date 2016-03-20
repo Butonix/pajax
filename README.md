@@ -385,26 +385,24 @@ pajax.delete(url)
 To transform a request or response use the following operators:
 
 ```javascript
-pajax.get(url)
+pajax.request(url)
      .before(req=>{
        // do some stuff before a request is sent
-       return req;
+       return { // returned options will be utilized in the request
+         noCache: true
+       };
      })
      .before(req=>{
        // do more stuff before a request is sent
-       return req;
      })
      .after(res=>{
        // do some stuff after a request
-       return res;
      })
      .afterSuccess(res=>{
        // do some stuff after a successful request
-       return res;
      })
      .afterFailure(res=>{
        // do some stuff after a failed request
-       return res;
      })
      .fetch() // send request
      .then(res=>{

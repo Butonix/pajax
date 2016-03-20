@@ -127,17 +127,15 @@
     }
   };
 
-  function convertBody(to) {
-    return function (body) {
-      var from = bodyType(body);
-      if (body === null || body === undefined || !from || from === to) {
-        return Promise.resolve(body);
-      } else if (map[to] && map[to][from]) {
-        return map[to][from](body);
-      } else {
-        return Promise.reject('Convertion from ' + from + ' to ' + to + ' not supported');
-      }
-    };
+  function convertBody(body, to) {
+    var from = bodyType(body);
+    if (body === null || body === undefined || !from || from === to) {
+      return Promise.resolve(body);
+    } else if (map[to] && map[to][from]) {
+      return map[to][from](body);
+    } else {
+      return Promise.reject('Convertion from ' + from + ' to ' + to + ' not supported');
+    }
   }
 
   var Body = function () {
@@ -150,27 +148,37 @@
     _createClass(Body, [{
       key: 'text',
       value: function text() {
-        return this.consumeBody().then(convertBody('text'));
+        return this.consumeBody().then(function (body) {
+          return convertBody(body, 'text');
+        });
       }
     }, {
       key: 'blob',
       value: function blob() {
-        return this.consumeBody().then(convertBody('blob'));
+        return this.consumeBody().then(function (body) {
+          return convertBody(body, 'blob');
+        });
       }
     }, {
       key: 'formData',
       value: function formData() {
-        return this.consumeBody().then(convertBody('formData'));
+        return this.consumeBody().then(function (body) {
+          return convertBody(body, 'formData');
+        });
       }
     }, {
       key: 'json',
       value: function json() {
-        return this.consumeBody().then(convertBody('json'));
+        return this.consumeBody().then(function (body) {
+          return convertBody(body, 'json');
+        });
       }
     }, {
       key: 'arrayBuffer',
       value: function arrayBuffer() {
-        return this.consumeBody().then(convertBody('ArrayBuffer'));
+        return this.consumeBody().then(function (body) {
+          return convertBody(body, 'ArrayBuffer');
+        });
       }
     }, {
       key: 'consumeBody',
@@ -178,16 +186,11 @@
         if (this.bodyUsed) {
           // TODO: Reject when body was used?
           //   return Promise.reject(...);
-          return Promise.resolve(this.body);
+          return Promise.resolve(this._body);
         } else {
           this.bodyUsed = true;
-          return Promise.resolve(this.body);
+          return Promise.resolve(this._body);
         }
-      }
-    }, {
-      key: 'convert',
-      value: function convert(to) {
-        return this.consumeBody().then(convertBody(to));
       }
     }]);
 
@@ -217,6 +220,52 @@
       }
     };
   }
+
+  function sliceIterator(arr, i) {
+    var _arr = [];
+    var _n = true;
+    var _d = false;
+    var _e = undefined;
+
+    try {
+      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+        _arr.push(_s.value);
+
+        if (i && _arr.length === i) break;
+      }
+    } catch (err) {
+      _d = true;
+      _e = err;
+    } finally {
+      try {
+        if (!_n && _i["return"]) _i["return"]();
+      } finally {
+        if (_d) throw _e;
+      }
+    }
+
+    return _arr;
+  }
+
+  function _slicedToArray (arr, i) {
+    if (Array.isArray(arr)) {
+      return arr;
+    } else if (Symbol.iterator in Object(arr)) {
+      return sliceIterator(arr, i);
+    } else {
+      throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    }
+  };
+
+  var _toConsumableArray = (function (arr) {
+    if (Array.isArray(arr)) {
+      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
+        arr2[i] = arr[i];
+      }return arr2;
+    } else {
+      return Array.from(arr);
+    }
+  })
 
   function normalizeName(name) {
     return String(name).toLowerCase().trim();
@@ -346,9 +395,11 @@
   }();
 
   var def = {
-    fetch: {
-      url: [],
-      xhr: []
+    pipelets: {
+      before: [],
+      after: [],
+      afterSuccess: [],
+      afterFailure: []
     },
     dataTypeMap: {
       'application/json': 'json',
@@ -357,31 +408,38 @@
       'application/xml': 'text'
     },
     request: {
-      method: true,
-      body: true,
-      timeout: true,
-      contentType: true,
-      dataType: true,
-      mode: true,
-      redirect: true,
-      referrer: true,
-      integrity: true,
-      progress: true,
-      credentials: true,
-      cache: true,
-      Response: true,
-      headers: function headers(_headers, reqHeaders) {
-        return new Headers(reqHeaders, _headers);
+      merge: {
+        headers: function headers(_headers, reqHeaders) {
+          return new Headers(reqHeaders, _headers);
+        },
+        pipelets: function pipelets(_pipelets, reqPipelets) {
+          _pipelets = _pipelets || {};
+          reqPipelets = reqPipelets || {};
+          return {
+            before: (reqPipelets.before || []).concat(_pipelets.before || []),
+            after: (reqPipelets.after || []).concat(_pipelets.after || []),
+            afterSuccess: (reqPipelets.afterSuccess || []).concat(_pipelets.afterSuccess || []),
+            afterFailure: (reqPipelets.afterFailure || []).concat(_pipelets.afterFailure || [])
+          };
+        }
       },
-      pipelets: function pipelets(_pipelets, reqPipelets) {
-        _pipelets = _pipelets || {};
-        reqPipelets = reqPipelets || {};
-        return {
-          before: (reqPipelets.before || []).concat(_pipelets.before || []),
-          after: (reqPipelets.after || []).concat(_pipelets.after || []),
-          afterSuccess: (reqPipelets.afterSuccess || []).concat(_pipelets.afterSuccess || []),
-          afterFailure: (reqPipelets.afterFailure || []).concat(_pipelets.afterFailure || [])
-        };
+      assign: {
+        body: '_body',
+        url: true,
+        method: true,
+        timeout: true,
+        contentType: true,
+        dataType: true,
+        mode: true,
+        redirect: true,
+        referrer: true,
+        integrity: true,
+        progress: true,
+        credentials: true,
+        cache: true,
+        Response: true,
+        headers: true,
+        pipelets: true
       }
     }
   };
@@ -413,7 +471,7 @@
 
       var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Response).call(this));
 
-      _this.body = body;
+      _this._body = body;
       _this.status = status;
       _this.statusText = statusText;
       _this.headers = headers;
@@ -426,7 +484,7 @@
     _createClass(Response, [{
       key: 'clone',
       value: function clone() {
-        return new this.constructor(this.body, {
+        return new this.constructor(this._body, {
           status: this.status,
           statusText: this.statusText,
           headers: this.headers,
@@ -447,25 +505,27 @@
       value: function auto() {
         var _this2 = this;
 
-        var dataType = undefined;
-        if (this.dataType) {
-          dataType = this.dataType;
-        } else if (Blob.prototype.isPrototypeOf(this.body)) {
-          dataType = match(this.body.type);
-        } else if (this.headers.get('content-type')) {
-          var contentType = this.headers.get('content-type').split(/ *; */).shift();
-          dataType = match(contentType);
-        }
+        return this.consumeBody().then(function (body) {
+          var dataType = undefined;
+          if (_this2.dataType) {
+            dataType = _this2.dataType;
+          } else if (Blob.prototype.isPrototypeOf(body)) {
+            dataType = match(body.type);
+          } else if (_this2.headers.get('content-type')) {
+            var contentType = _this2.headers.get('content-type').split(/ *; */).shift();
+            dataType = match(contentType);
+          }
 
-        if (dataType) {
-          return this.convert(dataType).catch(function (err) {
-            // Set error and reject the response when convertion fails
-            _this2.error = err;
-            return Promise.reject(_this2);
-          });
-        } else {
-          return Promise.resolve(this.body);
-        }
+          if (dataType) {
+            return convertBody(body, dataType).catch(function (err) {
+              // Set error and reject the response when convertion fails
+              _this2.error = err;
+              return Promise.reject(_this2);
+            });
+          } else {
+            return Promise.resolve(body);
+          }
+        });
       }
     }, {
       key: 'ok',
@@ -479,21 +539,8 @@
     return Response;
   }(Body);
 
-  function pipe(pipelets, o) {
-    var pipe = Promise.resolve(o);
-    (pipelets || []).forEach(function (pipelet) {
-      // chain together
-      pipe = pipe.then(pipelet);
-    });
-    return pipe;
-  }
-
   function fetch(url, init) {
     var _this = this;
-
-    var _ref = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-
-    var returnType = _ref.returnType;
 
     var req = undefined;
     if (url instanceof Request) {
@@ -510,16 +557,53 @@
       throw 'Could not create XMLHttpRequest object';
     }
 
-    var _ref2 = req.pipelets || {};
+    var onLoad = undefined;
+    var onError = undefined;
+    var onTimeout = undefined;
+    var aborted = false;
 
-    var before = _ref2.before;
-    var after = _ref2.after;
-    var afterSuccess = _ref2.afterSuccess;
-    var afterFailure = _ref2.afterFailure;
+    function abort() {
+      if (onLoad) xhr.removeEventListener('load', onLoad);
+      if (onError) xhr.removeEventListener('error', onError);
+      if (onTimeout) xhr.removeEventListener('timeout', onTimeout);
+      aborted = true;
+      xhr.abort();
+    }
+
+    var reqPipelets = req.pipelets || {};
+
+    function pipe(handler, o) {
+      var chain = Promise.resolve(o);
+      // Merge Pajax and request pipelets
+      var pipelets = [].concat(_toConsumableArray(def.pipelets[handler]), _toConsumableArray(reqPipelets[handler] || []));
+      pipelets.forEach(function (pipelet) {
+        // chain together
+        chain = chain.then(function (o) {
+          // Resolve the return value of the pipelet
+          return Promise.all([pipelet(o), o]);
+        }).then(function (_ref) {
+          var _ref2 = _slicedToArray(_ref, 2);
+
+          var init = _ref2[0];
+          var o = _ref2[1];
+
+          // Requests can be manipulated in the before handler
+          if (handler === 'before') {
+            // Create a new requests with the return value of the pipelet
+            if (typeof init === 'object' && init && o instanceof Request) {
+              return o.clone(init);
+            } else if (init instanceof Request) {
+              return init;
+            }
+          }
+          return o;
+        });
+      });
+      return chain;
+    }
 
     // Resolve before pipelets
-
-    var promise = pipe(before, req).then(function (req) {
+    var promise = pipe('before', req).then(function (req) {
       return new Promise(function (resolve, reject) {
         var url = req.url;
 
@@ -527,17 +611,9 @@
           throw 'URL required for request';
         }
 
-        def.fetch.url.forEach(function (urlHandler) {
-          url = urlHandler(url, req);
-        });
-
         var method = req.method || 'GET';
 
         xhr.open(method, url, true);
-
-        def.fetch.xhr.forEach(function (xhrHandler) {
-          xhrHandler(xhr, req);
-        });
 
         // Add custom headers
         if (req.headers) {
@@ -577,66 +653,80 @@
           xhr.responseType = 'blob';
         }
 
-        var xhrCallback = function xhrCallback(error) {
-          var headers = new Headers(xhr.getAllResponseHeaders());
-          var resBody = !('response' in xhr) ? xhr.responseText : xhr.response;
+        var xhrOnLoad = function xhrOnLoad() {
+          return function () {
+            var headers = new Headers(xhr.getAllResponseHeaders());
+            var resBody = !('response' in xhr) ? xhr.responseText : xhr.response;
 
-          var resInit = {
-            headers: headers,
-            status: xhr.status,
-            statusText: xhr.statusText,
-            dataType: req.dataType,
-            error: error,
-            url: url
+            var resInit = {
+              headers: headers,
+              status: xhr.status,
+              statusText: xhr.statusText,
+              dataType: req.dataType,
+              url: url
+            };
+
+            var ResponseCtor = req.Response || Response;
+            resolve(new ResponseCtor(resBody, resInit));
           };
-
-          var ResponseCtor = req.Response || Response;
-          resolve(new ResponseCtor(resBody, resInit, { error: error, url: url }));
         };
 
-        // Callback for errors
-        xhr.onerror = function () {
-          xhrCallback('Network error');
-        };
-
-        // Callback for timeouts
-        xhr.ontimeout = function () {
-          xhrCallback('Timeout');
+        var xhrOnError = function xhrOnError(error) {
+          return function () {
+            var resInit = {
+              status: xhr.status,
+              statusText: xhr.statusText,
+              url: url,
+              error: error
+            };
+            var ResponseCtor = req.Response || Response;
+            resolve(new ResponseCtor(null, resInit));
+          };
         };
 
         // Callback for document loaded.
-        xhr.onload = function () {
-          xhrCallback();
-        };
+        onLoad = xhrOnLoad();
+        xhr.addEventListener('load', onLoad);
+
+        // Callback for network errors.
+        onError = xhrOnError('Network error');
+        xhr.addEventListener('error', onLoad);
+
+        // Callback for timeouts
+        onTimeout = xhrOnError('Timeout');
+        xhr.addEventListener('timeout', onTimeout);
 
         var contentType = req.contentType;
-        var reqBodyP = undefined;
 
-        // Fallback to json if body is object and no content type is set
-        if (!contentType && req.body && typeof req.body === 'object') {
-          contentType = 'application/json';
-          reqBodyP = req.text();
-        } else {
-          reqBodyP = Promise.resolve(req.body);
-        }
-
-        reqBodyP.then(function (reqBody) {
+        req.consumeBody().then(function (reqBody) {
+          // Fallback to json if body is object and no content type is set
+          if (typeof reqBody === 'object' && reqBody && !contentType) {
+            contentType = 'application/json';
+            return req.text();
+          } else {
+            return Promise.resolve(reqBody);
+          }
+        }).then(function (reqBody) {
           // Add content type header only when body is attached
           if (reqBody !== undefined && contentType) {
             xhr.setRequestHeader('Content-Type', contentType);
           }
 
+          // Don't even call send() if already aborted
+          if (aborted) {
+            return;
+          }
           xhr.send(reqBody);
         }, function (err) {
-          xhrCallback('Invalid request body');
+          reject('Invalid request body');
         });
       });
     }).then(function (res) {
       // Resolve after pipelets
-      return pipe(after, res);
+      return pipe('after', res);
     }, function (res) {
-      // Resolve after pipelets and reject afterwars
-      return pipe(after, res).then(function (res) {
+      // Resolve after pipelets and reject afterwards
+      return pipe('after', res).then(function (res) {
         return Promise.reject(res);
       });
     }).then(function (res) {
@@ -648,12 +738,12 @@
       }
     }).then(function (res) {
       // Still not rejected? Resolve afterSuccess
-      return pipe(afterSuccess, res);
+      return pipe('afterSuccess', res);
     }, function (res) {
       if (res instanceof Response) {
         // When any pipelet rejects with a response object
         // resolve the afterFailure pipelets but still reject
-        return pipe(afterFailure, res).then(function (res) {
+        return pipe('afterFailure', res).then(function (res) {
           return Promise.reject(res);
         });
       } else {
@@ -662,14 +752,9 @@
       }
     });
 
-    if (returnType === 'meta') {
-      return {
-        xhr: xhr,
-        promise: promise
-      };
-    } else {
-      return promise;
-    }
+    // Decorate promise with abort() method
+    promise.abort = abort;
+    return promise;
   }
 
   var _defineProperty = (function (obj, key, value) {
@@ -752,6 +837,19 @@
     }
   };
 
+  function drawInit(req) {
+    var init = {};
+    // Assign request options
+    var assign = def.request.assign;
+    Object.keys(assign).forEach(function (key) {
+      var prop = typeof assign[key] === 'string' ? assign[key] : key;
+      if (req[prop] !== undefined) {
+        init[key] = req[prop];
+      }
+    });
+    return init;
+  }
+
   var Request = function (_Body) {
     _inherits(Request, _Body);
 
@@ -761,14 +859,11 @@
       var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Request).call(this));
 
       if (url instanceof Request) {
-        _this.url = url.url;
-        _this.assign(url);
+        init = drawInit(url);
       } else if (typeof url === 'string') {
-        _this.url = url;
+        _this.assign({ url: url });
       }
-      if (typeof init === 'object') {
-        _this.assign(init);
-      }
+      _this.assign(init);
       return _this;
     }
 
@@ -780,12 +875,16 @@
         var init = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
         // Assign request options
-        var options = def.request;
-        Object.keys(options).forEach(function (key) {
-          if (typeof options[key] === 'function') {
-            _this2[key] = options[key](init[key], _this2[key]);
-          } else if (init[key]) {
-            _this2[key] = init[key];
+        var assign = def.request.assign;
+        var merge = def.request.merge;
+        Object.keys(init).forEach(function (key) {
+          if (init[key] !== undefined) {
+            var prop = typeof assign[key] === 'string' ? assign[key] : key;
+            if (typeof merge[key] === 'function') {
+              _this2[key] = merge[key](init[key], _this2[prop]);
+            } else {
+              _this2[prop] = init[key];
+            }
           }
         });
         return this;
@@ -793,17 +892,16 @@
     }, {
       key: 'clone',
       value: function clone(init) {
-        return new this.constructor(this, init);
+        return new this.constructor(this).assign(init);
       }
     }, {
       key: 'spawn',
       value: function spawn(url, init) {
         var req = new this.constructor(this);
         if (url instanceof Request) {
-          req.assign(url);
+          init = drawInit(url);
         } else if (typeof url === 'string') {
-          req.url = url;
-          return req.assign(init);
+          req.assign({ url: url });
         }
         return req.assign(init);
       }
@@ -897,7 +995,11 @@
 
       var RequestCtor = this.constructor.Request || Request;
       var ResponseCtor = this.constructor.Response || Response;
-      this.req = new RequestCtor(null, init).assign({ Response: ResponseCtor });
+      if (init instanceof Request) {
+        this.req = init;
+      } else {
+        this.req = new RequestCtor(null, init).assign({ Response: ResponseCtor });
+      }
     }
 
     _createClass(Pajax, [{

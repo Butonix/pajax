@@ -12,7 +12,6 @@ describe('operators', function() {
                    .noCache()
                    .withCredentials()
                    .type('application/json')
-                   .asJSON()
                    .onProgress(prcb)
                    .setTimeout(5000)
                    .attach({foo:'bar'});
@@ -24,7 +23,6 @@ describe('operators', function() {
     assert.strictEqual(req.cache, 'no-cache');
     assert.strictEqual(req.credentials, 'include');
     assert.strictEqual(req.contentType, 'application/json');
-    assert.strictEqual(req.dataType, 'json');
     assert.strictEqual(req.progress, prcb);
     assert.strictEqual(req.timeout, 5000);
     // private

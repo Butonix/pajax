@@ -72,9 +72,8 @@ describe('Pajax.JSON', function() {
   it('should get json as text', function(done) {
     // Force
     pajax.request(baseURL + '/json')
-         .asText()
          .fetch()
-         .then(res=>res.auto())
+         .then(res=>res.text())
          .then(text => {
            assert.strictEqual(text, '{"foo":"bar"}');
          }, noCall).then(done, done);
@@ -82,9 +81,9 @@ describe('Pajax.JSON', function() {
 
   it('should reject invalid json', function(done) {
     pajax.get(baseURL + '/ok')
-         .then(res=>res.auto())
-         .then(noCall, res => {
-           assert.strictEqual(res.error, 'Invalid JSON');
+         .then(res=>res.json())
+         .then(noCall, err => {
+           assert.strictEqual(err, 'Invalid JSON');
          }).then(done, done);
   });
 

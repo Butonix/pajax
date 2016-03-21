@@ -9,7 +9,7 @@ It is very close to the [Fetch](https://fetch.spec.whatwg.org/) standard.
 
 ### jspm
 ```sh
-jspm install github:n-fuse/pajax@0.5
+jspm install github:n-fuse/pajax
 ```
 
 ```javascript
@@ -18,7 +18,7 @@ import Pajax from 'pajax';
 
 ### cjs
 ```sh
-npm install n-fuse/pajax#0.5
+npm install n-fuse/pajax
 ```
 
 ```javascript

@@ -16,10 +16,11 @@ jspm install github:n-fuse/pajax
 import Pajax from 'pajax';
 ```
 
-### cjs
-```sh
+### npm/cjs
+```
 npm install n-fuse/pajax
 ```
+
 
 ```javascript
 var Pajax = require('pajax');
@@ -27,15 +28,18 @@ var Pajax = require('pajax');
 
 ### global
 
-Add `dist/pajax.js` to your scripts
+Download `dist/pajax.js` or install via bower
+```
+bower install pajax
+```
 
 ```
-<script src="pajax.js"></script>
+<script src="/path/to/pajax.js"></script>
 ```
 
 ## Basic usage
 
-### Fetching data via fetch()
+### fetch()
 
 The basic fetch() is similar to the standard [Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch) specification
 
@@ -64,7 +68,7 @@ Pajax.fetch(url, opts)
      });
 ```
 
-### Fetching/Sending data via helpers
+### Using the helpers
 
 There are some built-in helpers for common HTTP methods.
 Helper methods are rejecting on erroneous status codes, so no need for Pajax.checkStatus.
@@ -101,14 +105,6 @@ Pajax.post(url, reqBody, opts)
 
 ### The Response body
 
-```javascript
-Pajax.get(url, opts)
-     .then(res=>res.json())
-     .then(body=>{
-       body; // parsed json as javascript object
-     });
-```
-
 To extract the body content from the response, you need to call one of the following methods.  All return a promise that is resolved with the response's body.
 
 - text()
@@ -116,6 +112,14 @@ To extract the body content from the response, you need to call one of the follo
 - blob()
 - arrayBuffer()
 - formData()
+
+```javascript
+Pajax.get(url, opts)
+     .then(res=>res.json())
+     .then(body=>{
+       body; // parsed json as javascript object
+     });
+```
 
 If you want to `get` some data an do not care about the response object, you can use the following methods:
 
@@ -155,7 +159,7 @@ The options are very similar to the [Fetch](https://fetch.spec.whatwg.org/) opti
 
 ## Advanced usage
 
-### Create a pajax instance
+### Pajax instances
 
 A Pajax instance allows you to store default options for requests.
 
@@ -245,7 +249,7 @@ let req3 = req2.header('Accept-Language', 'en');
 let req4 = req3.header('Authentication', token);
 
 // Request to /url with Accept, Accept-Language and Authentication headers
-req4.fetch().then(res=>{
+req4.get().then(res=>{
 
 });
 
@@ -255,7 +259,7 @@ pajax.request('/url')
      .header('Accept-Language', 'en')
      .header('Authentication', token)
      .fetch()
-     .then(res=>{
+     .get(res=>{
 
      });
 
@@ -389,7 +393,7 @@ pajax.request(url)
      .before(req=>{
        // do some stuff before a request is sent
        return { // returned options will be utilized in the request
-         noCache: true
+         cache: 'no-cache'
        };
      })
      .before(req=>{

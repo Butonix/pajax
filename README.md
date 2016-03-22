@@ -51,11 +51,11 @@ Pajax.fetch(url, opts)
 ```
 
 fetch() does not reject on HTTP status error codes (non 2xx).
-Use Pajax.checkStatus() to do so.
+Use Pajax.checkStatus to do so.
 
 ```javascript
 Pajax.fetch(url, opts)
-     .then(Pajax.checkStatus())
+     .then(Pajax.checkStatus)
      .then(res=>{
        res.ok:   // true
      }, res=>{
@@ -67,7 +67,7 @@ Pajax.fetch(url, opts)
 ### Fetching/Sending data via helpers
 
 There are some built-in helpers for common HTTP methods.
-Helper methods are rejecting on erroneous status codes, so no need for Pajax.checkStatus().
+Helper methods are rejecting on erroneous status codes, so no need for Pajax.checkStatus.
 
 ```javascript
 // GET

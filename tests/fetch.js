@@ -25,7 +25,7 @@ describe('static fetch', function() {
 
   it('should fetch error and checkStatus', function(done) {
     Pajax.fetch('http://127.0.0.1:3500/error')
-         .then(Pajax.checkStatus())
+         .then(Pajax.checkStatus)
          .then(noCall, res => {
            assert.strictEqual(res.status, 500);
            assert.strictEqual(res.statusText, 'Internal Server Error');

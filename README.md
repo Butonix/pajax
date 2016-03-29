@@ -34,7 +34,7 @@ bower install pajax
 ```
 
 ```
-<script src="/path/to/pajax.js"></script>
+<script src="/url/to/pajax.js"></script>
 ```
 
 ## Basic usage
@@ -55,7 +55,7 @@ Pajax.fetch(url, opts)
 ```
 
 fetch() does not reject on HTTP status error codes (non 2xx).
-Use Pajax.checkStatus to do so.
+Use the Pajax.checkStatus handler to do so.
 
 ```javascript
 Pajax.fetch(url, opts)
@@ -68,10 +68,10 @@ Pajax.fetch(url, opts)
      });
 ```
 
-### Using the helpers
+### get, post, put, patch, delete helpers
 
-There are some built-in helpers for common HTTP methods.
-Helper methods are rejecting on erroneous status codes, so no need for Pajax.checkStatus.
+There are built-in helpers for common HTTP methods.
+Helper methods are using the checkStatus handler by default.
 
 ```javascript
 // GET
@@ -105,7 +105,8 @@ Pajax.post(url, reqBody, opts)
 
 ### The Response body
 
-To extract the body content from the response, you need to call one of the following methods.  All return a promise that is resolved with the response's body.
+To extract the body content from the response, you need to call one of the following methods.
+All return a promise that is resolved with the response's body.
 
 - text()
 - json()
@@ -154,7 +155,6 @@ The options are very similar to the [Fetch](https://fetch.spec.whatwg.org/) opti
 - timeout (integer) - number of milliseconds to wait for a response
 - credentials (string) - `same-origin`, `include` - Use `include` to send cookies in a CORS request.
 - body (mixed) - The body you want to add to your request
-- dataType (string) - `text`, `json`, `blob`, `arrayBuffer` - Forces the responses auto() method to resolve in the specified type
 
 
 ## Advanced usage
@@ -164,12 +164,12 @@ The options are very similar to the [Fetch](https://fetch.spec.whatwg.org/) opti
 A Pajax instance allows you to store default options for requests.
 
 ```javascript
-let pajax = new Pajax({cache: 'no-cache'});
+let pajax = new Pajax({headers: {'foo': 'bar'});
 
-// includes no-cache header
+// includes foo header
 pajax.fetch(...)
 
-// does not include no-cache header
+// does not include foo header
 Pajax.fetch(...)
 ```
 
@@ -247,9 +247,10 @@ let req1 = pajax.request('/url');
 let req2 = req1.accept('application/json');
 let req3 = req2.header('Accept-Language', 'en');
 let req4 = req3.header('Authentication', token);
+let req5 = req4.is('GET');
 
-// Request to /url with Accept, Accept-Language and Authentication headers
-req4.get().then(res=>{
+// Request to /url as POST with Accept, Accept-Language and Authentication headers
+Pajax.fetch(req5).then(res=>{
 
 });
 
@@ -258,11 +259,9 @@ pajax.request('/url')
      .accept('application/json')
      .header('Accept-Language', 'en')
      .header('Authentication', token)
-     .fetch()
      .get(res=>{
 
      });
-
 ```
 
 See the following example for a full list of operators
@@ -309,7 +308,7 @@ Let's add a method for an authenticated POST in this example:
 
 ```javascript
 class MyPajax extends Pajax {
-  authPost(url, body, token) {
+  authPost(url, token, body) {
     return this.request(url)
                .attach(body)
                .header('Authorization', token)
@@ -320,15 +319,15 @@ class MyPajax extends Pajax {
 
 import auth from 'auth';
 let pajax = new MyPajax();
-pajax.authPost(url, {foo:1}, auth.token).then(...);
+pajax.authPost(url, auth.token, {foo:1}).then(...);
 ```
 
 ## Customizing the Pajax classes
 
-See the following code for a more advanced example how to customize Pajax
+See the following code for a more advanced example
 
 ```javascript
-// Our external authenticator
+// Our authenticator
 let auth = {token: 'g54gsfdgw34qj*9764w3'};
 
 // Custom pajax class
@@ -366,15 +365,15 @@ MyPajax.Response = class extends Pajax.Response {
 
 let pajax = new MyPajax();
 
-// token added by getAuth()
+// authorization token added by getAuth()
 pajax.aget(url)
      .then(res => { ... });
 
-// no token added
+// no authorization token added
 pajax.get(url)
      .then(res => { ... });
 
-// token added manually
+// authorization token added manually
 pajax.request()
      .authenticate() // Adds bearer token to request
      .post()
@@ -391,21 +390,26 @@ To transform a request or response use the following operators:
 ```javascript
 pajax.request(url)
      .before(req=>{
+       req; // request object
        // do some stuff before a request is sent
        return { // returned options will be utilized in the request
          cache: 'no-cache'
        };
      })
      .before(req=>{
+       req; // request object
        // do more stuff before a request is sent
      })
      .after(res=>{
+       res; // response object
        // do some stuff after a request
      })
      .afterSuccess(res=>{
+       res; // response object
        // do some stuff after a successful request
      })
      .afterFailure(res=>{
+       res; // response object
        // do some stuff after a failed request
      })
      .fetch() // send request

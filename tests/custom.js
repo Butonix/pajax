@@ -5,6 +5,16 @@ let auth = {
 };
 
 class MyPajax extends Pajax {
+
+  constructor(auth, init) {
+    super(init);
+    this.auth = auth;
+  }
+
+  fork(init) {
+    return new MyPajax(auth, init);
+  }
+
   validateToken() {
     return this.request(baseURL + '/headerecho')
                .authenticate('rosemary')
@@ -31,14 +41,14 @@ class MyPajax extends Pajax {
                  .checkStatus()
                  .fetch();
   }
-}
 
-MyPajax.def.request.assign.auth = true;
+
+}
 
 MyPajax.Request = class extends Pajax.Request {
   authenticate(token2) {
     return this.before(req=> {
-      return req.header('authorization', `Bearer ${this.auth.token} ${token2}`);
+      return req.header('authorization', `Bearer ${this.pajax.auth.token} ${token2}`);
     });
   }
 };
@@ -51,7 +61,7 @@ MyPajax.Response = class extends Pajax.Response {
 
 describe('custom', function() {
 
-  let pajax = new MyPajax({auth});
+  let pajax = new MyPajax(auth);
 
   it('should send and receive the authToken', function(done) {
     pajax.getAuthenticated(baseURL + '/headerecho')

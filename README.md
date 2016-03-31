@@ -247,7 +247,7 @@ let req1 = pajax.request('/url');
 let req2 = req1.accept('application/json');
 let req3 = req2.header('Accept-Language', 'en');
 let req4 = req3.header('Authentication', token);
-let req5 = req4.is('GET');
+let req5 = req4.is('POST');
 
 // Request to /url as POST with Accept, Accept-Language and Authentication headers
 Pajax.fetch(req5).then(res=>{

@@ -9,7 +9,7 @@ It is very close to the [Fetch](https://fetch.spec.whatwg.org/) standard.
 
 ### jspm
 ```sh
-jspm install github:pajax/pajax
+jspm install pajax
 ```
 
 ```javascript

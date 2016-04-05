@@ -51,7 +51,9 @@ describe('JSON', function() {
 });
 
 describe('Pajax.JSON', function() {
-  var pajax = new Pajax().JSON();
+  var pajax = new Pajax({headers:{
+    
+  }}).JSON();
   it('should get parsed json', function(done) {
     // JSON as contentType text
     pajax.get(baseURL + '/jsontext')

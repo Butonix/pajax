@@ -12,14 +12,13 @@ class MyPajax extends Pajax {
   }
 
   fork(init) {
-    return new MyPajax(auth, init);
+    return new this.constructor(this.auth, [this.defaults, init], this.pipelets);
   }
 
   validateToken() {
     return this.request(baseURL + '/headerecho')
                .authenticate('rosemary')
-               .checkStatus()
-               .fetch()
+               .get()
                .then(res=>res.json())
                .then(body=>{
                  return body.authorization==='Bearer salt rosemary';
@@ -29,17 +28,14 @@ class MyPajax extends Pajax {
   getAuthenticated(url, init) {
     return this.request(url, init)
                .authenticate('cinnamon')
-               .checkStatus()
-               .fetch();
+               .get();
   }
 
   post(url, body, init) {
       return this.request(url, init)
-                 .is('POST')
                  .attach(body)
                  .authenticate('pepper')
-                 .checkStatus()
-                 .fetch();
+                 .post();
   }
 
 
@@ -47,9 +43,7 @@ class MyPajax extends Pajax {
 
 MyPajax.Request = class extends Pajax.Request {
   authenticate(token2) {
-    return this.before(req=> {
-      return req.header('authorization', `Bearer ${this.pajax.auth.token} ${token2}`);
-    });
+    return this.header('authorization', `Bearer ${this.pajax.auth.token} ${token2}`);
   }
 };
 

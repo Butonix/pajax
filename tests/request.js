@@ -17,7 +17,7 @@ describe('headers', function() {
   var pajax = new Pajax();
   it('should receive the response headers', function(done) {
     pajax.request(baseURL + '/header')
-         .is('GET')
+         .as('GET')
          .fetch()
          .then(res => {
            assert.strictEqual(res.headers.get('content-type'), 'text/html; charset=utf-8');
@@ -26,7 +26,7 @@ describe('headers', function() {
 
   it('should send the headers', function(done) {
     pajax.request(baseURL + '/headerecho')
-         .is('GET')
+         .as('GET')
          .header('Accept-Language', 'foo')
          .header('authorization', `foo`)
          .fetch()
@@ -43,7 +43,7 @@ describe('retry', function() {
 
   it('should retry the request', function(done) {
     function retry(req, cb) {
-      return pajax.fetch(req).catch(res=> {
+      return req.get().catch(res=> {
         return cb(res).then(doRetry=> {
           if (doRetry) {
             return retry(req, cb);
@@ -62,7 +62,7 @@ describe('retry', function() {
       return Promise.resolve(i < 3);
     }
 
-    var req = pajax.request('/error').checkStatus();
+    var req = pajax.request('/error');
     retry(req, callback).then(noCall, res=> {
       assert.strictEqual(i, 3);
       done();

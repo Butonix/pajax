@@ -6,7 +6,7 @@ describe('operators', function() {
     let prcb = (req, event)=>{};
 
     var req = Pajax.request('/url')
-                   .is('PATCH')
+                   .as('PATCH')
                    .header({'foo': 'bar'})
                    .header('bar', 'foo')
                    .noCache()

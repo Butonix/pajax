@@ -37,11 +37,97 @@ bower install pajax
 <script src="/url/to/pajax.js"></script>
 ```
 
-## Basic usage
+## Quick start
+
+Pajax contains a bunch of methods to perform http requests.
+Each helper return a promise which resolves in a response object.
+
+```javascript
+// GET
+Pajax.get(url, opts)
+     .then(res=>{
+       res: // the response
+     }, res=>{
+       // called on status or network errors
+       res.ok;    // false
+       res.error; // the error
+     });
+
+// POST
+Pajax.post(url, reqBody, opts)
+     .then(res=>{
+       res: // the response
+     }, res=>{
+       // called on network and status errors
+       res.ok;    // false
+       res.error; // the error
+     });
+```
+
+#### requests methods
+
+- get(url, opts)
+- delete(url, opts)
+- post(url, reqBody, opts)
+- put(url, reqBody, opts)
+- patch(url, reqBody, opts)
+
+### The response object
+
+To extract the body content from the response, you need to call one of the following methods.
+All return a promise that is resolved with the response's body.
+
+- text()
+- json()
+- blob()
+- arrayBuffer()
+- formData()
+
+```javascript
+Pajax.get(url, opts)
+     .then(res=>res.json())
+     .then(body=>{
+       body; // parsed json as javascript object
+     });
+```
+
+If you just want to `get` some data an do not care about the response object, you can use the following methods:
+
+- getText(url, opts)
+- getJSON(url, opts)
+- getBlob(url, opts)
+- getArrayBuffer(url, opts)
+- getFormData(url, opts)
+
+```javascript
+Pajax.getJSON(url, opts)
+     .then(body=>{
+       body; // parsed json as javascript object
+     });
+```
+
+#### Parameters
+
+- url (string) - the URL for this request
+- opts (object) - set of key/value pairs to configure the ajax requests
+- reqBody (mixed) - The body you want to add to your request
+
+#### Options (opts)
+
+The options are very similar to the [Fetch](https://fetch.spec.whatwg.org/) options.
+
+- cache (string) - `default`, `no-cache` - `no-cache` will add a no-cache request header
+- contentType (string) - the content type of the data sent to the server
+- headers (object) - set of key/value pairs that are added to the request header
+- progress (function) - callback for the the upload progress
+- method (string) - `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`
+- timeout (integer) - number of milliseconds to wait for a response
+- credentials (string) - `same-origin`, `include` - Use `include` to send cookies in a CORS request.
+- body (mixed) - The body you want to add to your request
 
 ### fetch()
 
-The basic fetch() is similar to the standard [Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch) specification
+The fetch() method is close to the standard [Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch) specification
 
 ```javascript
 Pajax.fetch(url, opts)
@@ -68,95 +154,6 @@ Pajax.fetch(url, opts)
      });
 ```
 
-### get, post, put, patch, delete helpers
-
-There are built-in helpers for common HTTP methods.
-Helper methods are using the checkStatus handler by default.
-
-```javascript
-// GET
-Pajax.get(url, opts)
-     .then(res=>{
-       res: // the response
-     }, res=>{
-       // called on status or network errors
-       res.ok;    // false
-       res.error; // the error
-     });
-
-// POST
-Pajax.post(url, reqBody, opts)
-     .then(res=>{
-       res: // the response
-     }, res=>{
-       // called on network and status errors
-       res.ok;    // false
-       res.error; // the error
-     });
-```
-
-#### helper methods
-
-- get(url, opts)
-- delete(url, opts)
-- post(url, reqBody, opts)
-- put(url, reqBody, opts)
-- patch(url, reqBody, opts)
-
-### The Response body
-
-To extract the body content from the response, you need to call one of the following methods.
-All return a promise that is resolved with the response's body.
-
-- text()
-- json()
-- blob()
-- arrayBuffer()
-- formData()
-
-```javascript
-Pajax.get(url, opts)
-     .then(res=>res.json())
-     .then(body=>{
-       body; // parsed json as javascript object
-     });
-```
-
-If you want to `get` some data an do not care about the response object, you can use the following methods:
-
-- getText(url, opts)
-- getJSON(url, opts)
-- getBlob(url, opts)
-- getArrayBuffer(url, opts)
-- getFormData(url, opts)
-
-```javascript
-Pajax.getJSON(url, opts)
-     .then(body=>{
-       body; // parsed json as javascript object
-     });
-```
-
-#### Parameters
-
-- url (string) - the URL for this request
-- opts (object) - set of key/value pairs to configure the ajax requests
-- reqBody (mixed) - The body you want to add to your request
-
-#### Options (opts)
-
-The options are very similar to the [Fetch](https://fetch.spec.whatwg.org/) options.
-
-- method (string) - `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`
-- cache (string) - `default`, `no-cache` - `no-cache` will add a no-cache request header
-- contentType (string) - the content type of the data sent to the server
-- headers (object) - set of key/value pairs that are added to the request header
-- progress (function) - callback for the the upload progress
-- timeout (integer) - number of milliseconds to wait for a response
-- credentials (string) - `same-origin`, `include` - Use `include` to send cookies in a CORS request.
-- body (mixed) - The body you want to add to your request
-
-
 ## Advanced usage
 
 ### Pajax instances
@@ -166,16 +163,11 @@ A Pajax instance allows you to store default options for requests.
 ```javascript
 let pajax = new Pajax({headers: {'foo': 'bar'});
 
-// includes foo header
-pajax.fetch(...)
-
 // does not include foo header
 Pajax.fetch(...)
-```
 
-All the helper-methods are also available on an instance
-
-```javascript
+// includes foo header
+pajax.fetch(...)
 pajax.get(...)
 pajax.getJSON(...)
 pajax.post(...)
@@ -213,7 +205,7 @@ let req = pajax.request(url, opts);
 Pajax.fetch(req).then(res=>{ ... });
 ```
 
-Same goes for the get(), getJSON(), post(), put() etc. helpers
+Same goes for the get(), getJSON(), post(), put() etc. methods
 
 ```javascript
 pajax.request(url, opts).get().then(res=>{ ... })
@@ -225,7 +217,7 @@ pajax.request(url, opts).post().then(res=>{ ... })
 
 ### Responses
 
-A fetch() is resolved with a response object.
+A fetch(), get(), post(), ... is resolved with a response object.
 Response objects are described [here](https://developer.mozilla.org/en-US/docs/Web/API/Response).
 
 In addition to `text()`, `json()`, `blob()` etc, the the pajax response object has an `auto()` method.
@@ -243,60 +235,41 @@ Pajax.fetch('/url/to/json').then(res=>res.auto()).then(body=>{
 Operators will spawn a new request/pajax instance inheriting all the options of the source
 
 ```javascript
-let req1 = pajax.request('/url');
-let req2 = req1.accept('application/json');
-let req3 = req2.header('Accept-Language', 'en');
-let req4 = req3.header('Authentication', token);
-let req5 = req4.is('POST');
 
-// Request to /url as POST with Accept, Accept-Language and Authentication headers
-Pajax.fetch(req5).then(res=>{
-
-});
-
-// In short
-pajax.request('/url')
-     .accept('application/json')
-     .header('Accept-Language', 'en')
-     .header('Authentication', token)
-     .get(res=>{
-
-     });
-```
-
-See the following example for a full list of operators
-
-```javascript
-pajax.request('/url')                   // creates the request
-     .is('POST')                        // Sets the http method
-     .accept('application/json')        // Sets the accept header to `application/json`
-     .header({'Accept-Language': 'en'}) // headers via object
-     .header('Accept-Language', 'en')   // header via key-value
-     .noCache()                         // Sets cache to `no-cache`
-     .withCredentials()                 // Sets credentials to `include`
-     .type('application/json')          // Sets the content-type to `application/json`
-     .onProgress(req, event=>{          // Progress callback
-       ...
-     })
-     .setTimeout(5000)                  // Sets the timeout
-     .attach({ foo: 'bar' })            // Set the body
-     .checkStatus()                     // Rejects on status code errors
-     .fetch()                           // Send the request
-     .then(res=>{                       
-       res; // Response object
-     });
-
-```
-
-The operators are also available on pajax instances.
-
-```javascript
 let pajax = new Pajax()
             .header('Accept-Language', 'en')
             .noCache();
 
-// Includes accept-language and no-cache header
-pajax.fetch(url).then(...);
+pajax.request('/url')
+     .accept('application/json')
+     .header('Authentication', token)
+     .get(res=>{
+        // Request to /url as GET with Accept-Language, no-cache, accept and authentication headers
+     });
+```
+
+Operators on pajax and request instances:
+```
+- as(method)                        // Sets the http method
+- accept(type)                      // Sets the accept header
+- header(object)                    // headers via object
+- header(string, string)            // header via key-value
+- noCache()                         // Sets cache to `no-cache`
+- withCredentials()                 // Sets credentials to `include`
+- type(type)                        // Sets the content header
+- onProgress(callback)              // Progress callback
+- setTimeout(number)                // Sets the timeout
+```
+Operators on request instances
+```
+- attach(body)                      // Set the body
+```
+Operators on pajax instances
+```
+- JSON()                            // Sets the accept header and content-type to `application/json`
+- URLEncoded()                      // Sets the content-type to `application/x-www-form-urlencoded`
+- before(callback)                  // See transformation operators
+- after(callback)                   // See transformation operators
 ```
 
 ## Extending pajax
@@ -333,7 +306,7 @@ let auth = {token: 'g54gsfdgw34qj*9764w3'};
 // Custom pajax class
 class MyPajax extends Pajax {
   // Add new method for authenticated GETs
-  aget(...args) {
+  authget(...args) {
     return this.request(...args)
                .authenticate()
                .get();
@@ -365,8 +338,8 @@ MyPajax.Response = class extends Pajax.Response {
 
 let pajax = new MyPajax();
 
-// authorization token added by getAuth()
-pajax.aget(url)
+// authorization token added by authget()
+pajax.authget(url)
      .then(res => { ... });
 
 // no authorization token added
@@ -374,7 +347,7 @@ pajax.get(url)
      .then(res => { ... });
 
 // authorization token added manually
-pajax.request()
+pajax.request(url)
      .authenticate() // Adds bearer token to request
      .post()
      .then(res => { ... });
@@ -383,12 +356,12 @@ pajax.request()
 pajax.delete(url)
      .then(res => { ... });
 ```
-### Request/Response transformation operators
+### Transformation operators
 
-To transform a request or response use the following operators:
+User use the following operators to transform a request or response
 
 ```javascript
-pajax.request(url)
+let pajax = new Pajax()
      .before(req=>{
        req; // request object
        // do some stuff before a request is sent
@@ -404,27 +377,8 @@ pajax.request(url)
        res; // response object
        // do some stuff after a request
      })
-     .afterSuccess(res=>{
-       res; // response object
-       // do some stuff after a successful request
-     })
-     .afterFailure(res=>{
-       res; // response object
-       // do some stuff after a failed request
-     })
-     .fetch() // send request
-     .then(res=>{
-       // res.body: the response from the server
-     });
-```
 
-Call the operators on the pajax instance to register transformation tasks for every request.
-
-```javascript
-let pajax = new Pajax().before(req=>{
-       // do some stuff before a request is sent
-     });
-
+// before/after handlers are called
 pajax.get(url).then(...);
 
 ```

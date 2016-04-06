@@ -305,6 +305,14 @@ let auth = {token: 'g54gsfdgw34qj*9764w3'};
 
 // Custom pajax class
 class MyPajax extends Pajax {
+
+  constructor(init) {
+    this.super(init, {
+      // Provide some class defaults
+      cache: 'no-cache'
+    });
+  }
+
   // Add new method for authenticated GETs
   authget(...args) {
     return this.request(...args)

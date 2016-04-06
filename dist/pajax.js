@@ -533,7 +533,7 @@
 
   function pipe(pajax, handler, data) {
     var pipe$ = Promise.resolve(data);
-    var pipelets = (pajax ? pajax.pipelets[handler] : []) || [];
+    var pipelets = pajax ? pajax.getPipelets(handler) : [];
     // Merge global and pajax pipelets
     [].concat(_toConsumableArray(def.pipelets[handler]), _toConsumableArray(pipelets)).forEach(function (pipelet) {
       // chain together
@@ -800,21 +800,27 @@
 
   // Merges multiple request options
   // The result object is independent of the source options
-  function options(inits) {
-    inits = Array.isArray(inits) ? inits : [inits];
+  function options() {
     var result = {};
     var request = def.request;
+
+    for (var _len = arguments.length, inits = Array(_len), _key = 0; _key < _len; _key++) {
+      inits[_key] = arguments[_key];
+    }
+
     inits.forEach(function (init) {
-      Object.keys(init || {}).forEach(function (key) {
-        if (request[key] && init[key] !== undefined) {
-          // Merge options
-          if (request[key] && request[key].merge) {
-            result[key] = request[key].merge(result[key], init[key]);
-          } else {
-            result[key] = init[key];
+      if (typeof init === 'object' && init) {
+        Object.keys(init).forEach(function (key) {
+          if (request[key] && init[key] !== undefined) {
+            // Merge options
+            if (request[key] && request[key].merge) {
+              result[key] = request[key].merge(result[key], init[key]);
+            } else {
+              result[key] = init[key];
+            }
           }
-        }
-      });
+        });
+      }
     });
     return result;
   }
@@ -822,7 +828,7 @@
   var Request = function (_Body) {
     _inherits(Request, _Body);
 
-    function Request(url, init) {
+    function Request(url, inits) {
       var pajax = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
 
       _classCallCheck(this, Request);
@@ -830,14 +836,16 @@
       var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Request).call(this));
 
       if (url instanceof Request) {
-        var inits = Array.isArray(init) ? init : [init];
-        // Extract the request options from the request
-        init = [extractInit(url)].concat(_toConsumableArray(inits));
+        // Extract the request options from the request and
+        inits = [].concat(extractInit(url), inits);
         url = url.url;
         pajax = url.pajax || pajax;
       }
+      // make sure init is an array
+      inits = [].concat(inits);
 
-      init = options(init);
+      // Convert init array into single init object
+      var init = options.apply(undefined, _toConsumableArray(inits));
 
       // Assign pajax factory
       _this.pajax = pajax;
@@ -952,17 +960,16 @@
 
   var Pajax = function () {
     function Pajax(init) {
-      var pipelets = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
       _classCallCheck(this, Pajax);
 
-      // Multipe inits can be provided in an array
-      // store defaults always as an array
-      this.defaults = Array.isArray(init) ? init : [init];
-      this.pipelets = {
-        before: [].concat(_toConsumableArray(pipelets.before || [])),
-        after: [].concat(_toConsumableArray(pipelets.after || []))
-      };
+      // Store init always as an array
+      this.inits = [].concat(init);
+
+      for (var _len = arguments.length, defaults = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        defaults[_key - 1] = arguments[_key];
+      }
+
+      this.defaults = defaults;
     }
 
     _createClass(Pajax, [{
@@ -1044,15 +1051,15 @@
       }
     }, {
       key: 'fetch',
-      value: function fetch(url, init) {
+      value: function fetch$$(url, init) {
         return this.request(url, init).fetch();
       }
     }, {
       key: 'request',
       value: function request(url, init) {
         var RequestCtor = this.constructor.Request || Request;
-        // Merge class defaults and instance defaults into init
-        init = [this.constructor.defaults].concat(_toConsumableArray(this.defaults), [init]);
+        // Merge class default and inits with init
+        init = [].concat(this.defaults, this.inits, init);
         return new RequestCtor(url, init, this);
       }
     }, {
@@ -1062,19 +1069,28 @@
         return new ResponseCtor(body, init, this);
       }
     }, {
-      key: 'registerPipelet',
-      value: function registerPipelet(handler, func) {
-        this.pipelets[handler].push(func);
-        return this;
+      key: 'getPipelets',
+      value: function getPipelets(handler) {
+        var _ref;
+
+        // Merge class default and inits pipelets
+        var pipelets = [].concat(_toConsumableArray(this.defaults), _toConsumableArray(this.inits)).map(function (init) {
+          return init && init[handler];
+        });
+        // flatten and filter the pipelets
+        return (_ref = []).concat.apply(_ref, _toConsumableArray(pipelets)).filter(function (func) {
+          return typeof func === 'function';
+        });
       }
     }, {
-      key: 'unregisterPipelet',
-      value: function unregisterPipelet(handler, func) {
-        var idx = this.pipelets[handler].indexOf(func);
-        if (idx >= 0) {
-          this.pipelets[handler].splice(idx, 1);
-        }
-        return this;
+      key: 'before',
+      value: function before(func) {
+        return this.fork({ before: [func] });
+      }
+    }, {
+      key: 'after',
+      value: function after(func) {
+        return this.fork({ after: [func] });
       }
     }, {
       key: 'clone',
@@ -1084,7 +1100,7 @@
     }, {
       key: 'fork',
       value: function fork(init) {
-        return new this.constructor([].concat(_toConsumableArray(this.defaults), [init]), this.pipelets);
+        return new this.constructor([].concat(_toConsumableArray(this.inits), [init]));
       }
     }, {
       key: 'JSON',
@@ -1097,16 +1113,6 @@
       value: function URLEncoded() {
         var ct = 'application/x-www-form-urlencoded';
         return this.type(ct);
-      }
-    }, {
-      key: 'before',
-      value: function before(func) {
-        return this.fork().registerPipelet('before', func);
-      }
-    }, {
-      key: 'after',
-      value: function after(func) {
-        return this.fork().registerPipelet('after', func);
       }
     }], [{
       key: 'get',
@@ -1187,15 +1193,13 @@
       }
     }, {
       key: 'fetch',
-      value: function fetch(url, init) {
-        return this.request(url, init).fetch();
+      value: function fetch$$(url, init) {
+        return fetch(url, init);
       }
     }, {
       key: 'request',
       value: function request(url, init) {
         var RequestCtor = this.Request || Request;
-        // Merge class defaults into init
-        init = [this.defaults, init];
         return new RequestCtor(url, init);
       }
     }, {

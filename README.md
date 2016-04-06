@@ -39,8 +39,8 @@ bower install pajax
 
 ## Quick start
 
-Pajax contains a bunch of methods to perform http requests.
-Each helper return a promise which resolves in a response object.
+Pajax provides some methods to perform http requests.
+Each method returns a promise which resolves in a response object.
 
 ```javascript
 // GET
@@ -74,8 +74,7 @@ Pajax.post(url, reqBody, opts)
 
 ### The response object
 
-To extract the body content from the response, you need to call one of the following methods.
-All return a promise that is resolved with the response's body.
+You can call one of the following methods to extract the body from a response:
 
 - text()
 - json()
@@ -91,7 +90,7 @@ Pajax.get(url, opts)
      });
 ```
 
-If you just want to `get` some data an do not care about the response object, you can use the following methods:
+If you just want to `GET` some data an do not care about the response object, you can use the following methods:
 
 - getText(url, opts)
 - getJSON(url, opts)
@@ -217,7 +216,7 @@ pajax.request(url, opts).post().then(res=>{ ... })
 
 ### Responses
 
-A fetch(), get(), post(), ... is resolved with a response object.
+A fetch(), get(), post(), etc. is resolved with a response object.
 Response objects are described [here](https://developer.mozilla.org/en-US/docs/Web/API/Response).
 
 In addition to `text()`, `json()`, `blob()` etc, the the pajax response object has an `auto()` method.
@@ -225,7 +224,7 @@ auto() will try to infer the body based on the content type of the response.
 e.g. a json response will yield a js object, whereas text will yield a string.
 
 ```javascript
-Pajax.fetch('/url/to/json').then(res=>res.auto()).then(body=>{
+Pajax.get('/url/to/json').then(res=>res.auto()).then(body=>{
   body; // js object
 });
 ```
@@ -236,15 +235,13 @@ Operators will spawn a new request/pajax instance inheriting all the options of 
 
 ```javascript
 
-let pajax = new Pajax()
-            .header('Accept-Language', 'en')
-            .noCache();
+let pajax = new Pajax().JSON().noCache();
 
 pajax.request('/url')
-     .accept('application/json')
      .header('Authentication', token)
-     .get(res=>{
-        // Request to /url as GET with Accept-Language, no-cache, accept and authentication headers
+     .attach({foo:'bar'})
+     .post(res=>{
+        // Request to /url as POST with content-type/accept=application/json, no-cache, authentication headers and data attached as body
      });
 ```
 
@@ -262,7 +259,7 @@ Operators on pajax and request instances:
 ```
 Operators on request instances
 ```
-- attach(body)                      // Set the body
+- attach(body)                      // Sets the body
 ```
 Operators on pajax instances
 ```

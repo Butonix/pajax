@@ -7,12 +7,16 @@ let auth = {
 class MyPajax extends Pajax {
 
   constructor(auth, init) {
-    super(init);
+    super(init, {
+      before: req=>{req.beforeCalled = true; return req;},
+      after: [res=>{res.afterCalled1 = true; return res;},
+              res=>{res.afterCalled2 = true; return res;}]
+    });
     this.auth = auth;
   }
 
   fork(init) {
-    return new this.constructor(this.auth, [this.defaults, init], this.pipelets);
+    return new this.constructor(this.auth, [...this.inits, init], this.defaults);
   }
 
   validateToken() {
@@ -57,14 +61,19 @@ describe('custom', function() {
 
   let pajax = new MyPajax(auth);
 
+  it('should call the before/after pipelet', function(done) {
+    pajax.get(baseURL + '/ok')
+         .then(res => {
+           assert.strictEqual(res.afterCalled1, true);
+           assert.strictEqual(res.afterCalled2, true);
+           assert.strictEqual(res.request.beforeCalled, true);
+         }, noCall).then(done, done);
+  });
+
   it('should send and receive the authToken', function(done) {
     pajax.getAuthenticated(baseURL + '/headerecho')
          .then(res => {
            assert.strictEqual(res.isAuthenticated, true);
-           return res.json();
-         })
-         .then(body => {
-           assert.strictEqual(body.authorization, 'Bearer salt cinnamon');
          }, noCall)
          .then(done, done);
   });

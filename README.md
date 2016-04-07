@@ -363,7 +363,7 @@ pajax.delete(url)
 ```
 ### Transformation operators
 
-User use the following operators to transform a request or response
+Use the following operators to transform a request or response
 
 ```javascript
 let pajax = new Pajax()

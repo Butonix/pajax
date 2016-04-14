@@ -4,6 +4,42 @@
   (global.Pajax = factory());
 }(this, function () { 'use strict';
 
+  function sliceIterator(arr, i) {
+    var _arr = [];
+    var _n = true;
+    var _d = false;
+    var _e = undefined;
+
+    try {
+      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+        _arr.push(_s.value);
+
+        if (i && _arr.length === i) break;
+      }
+    } catch (err) {
+      _d = true;
+      _e = err;
+    } finally {
+      try {
+        if (!_n && _i["return"]) _i["return"]();
+      } finally {
+        if (_d) throw _e;
+      }
+    }
+
+    return _arr;
+  }
+
+  function _slicedToArray (arr, i) {
+    if (Array.isArray(arr)) {
+      return arr;
+    } else if (Symbol.iterator in Object(arr)) {
+      return sliceIterator(arr, i);
+    } else {
+      throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    }
+  };
+
   var _toConsumableArray = (function (arr) {
     if (Array.isArray(arr)) {
       for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
@@ -400,332 +436,6 @@
     }
   };
 
-  function match(ct) {
-    if (!ct) {
-      return null;
-    }
-    var key = Object.keys(def.autoMap).find(function (key) {
-      return ct.startsWith(key);
-    });
-    return key ? def.autoMap[key] : null;
-  }
-
-  var Response = function (_Body) {
-    _inherits(Response, _Body);
-
-    function Response(body) {
-      var _ref = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-      var status = _ref.status;
-      var statusText = _ref.statusText;
-      var headers = _ref.headers;
-      var url = _ref.url;
-      var pajax = _ref.pajax;
-      var error = _ref.error;
-      var request = _ref.request;
-
-      _classCallCheck(this, Response);
-
-      var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Response).call(this));
-
-      _this._body = body;
-      _this.status = status;
-      _this.statusText = statusText;
-      _this.headers = headers;
-      _this.url = url;
-      _this.pajax = pajax;
-      _this.request = request;
-      _this.error = error || undefined;
-      return _this;
-    }
-
-    _createClass(Response, [{
-      key: 'clone',
-      value: function clone() {
-        return new this.constructor(this._body, {
-          status: this.status,
-          statusText: this.statusText,
-          headers: this.headers,
-          url: this.url,
-          pajax: this.pajax,
-          request: this.request,
-          error: this.error
-        });
-      }
-
-      // autoconverts body based on the the response's contentType
-      // dataType is determined in the following order
-      // - if the response is a blob, by the blobs content type
-      // - content type in the response header
-
-    }, {
-      key: 'auto',
-      value: function auto() {
-        var _this2 = this;
-
-        return this.consumeBody().then(function (body) {
-          var dataType = undefined;
-          if (Blob.prototype.isPrototypeOf(body)) {
-            dataType = match(body.type);
-          } else if (_this2.headers.get('content-type')) {
-            var contentType = _this2.headers.get('content-type').split(/ *; */).shift();
-            dataType = match(contentType);
-          }
-
-          if (dataType) {
-            return convertBody(body, dataType).catch(function (err) {
-              // Set error and reject the response when convertion fails
-              _this2.error = err;
-              return Promise.reject(_this2);
-            });
-          } else {
-            return Promise.resolve(body);
-          }
-        });
-      }
-    }, {
-      key: 'ok',
-      get: function get() {
-        // Success: status between 200 and 299 or 304
-        // Failure: status below 200 or beyond 299 excluding 304
-        return this.status >= 200 && this.status < 300 || this.status === 304;
-      }
-    }]);
-
-    return Response;
-  }(Body);
-
-  function sliceIterator(arr, i) {
-    var _arr = [];
-    var _n = true;
-    var _d = false;
-    var _e = undefined;
-
-    try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);
-
-        if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;
-      _e = err;
-    } finally {
-      try {
-        if (!_n && _i["return"]) _i["return"]();
-      } finally {
-        if (_d) throw _e;
-      }
-    }
-
-    return _arr;
-  }
-
-  function _slicedToArray (arr, i) {
-    if (Array.isArray(arr)) {
-      return arr;
-    } else if (Symbol.iterator in Object(arr)) {
-      return sliceIterator(arr, i);
-    } else {
-      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-    }
-  };
-
-  function pipe(pajax, handler, data) {
-    var pipe$ = Promise.resolve(data);
-    var pipelets = pajax ? pajax.getPipelets(handler) : [];
-    // Merge global and pajax pipelets
-    [].concat(_toConsumableArray(def.pipelets[handler]), _toConsumableArray(pipelets)).forEach(function (pipelet) {
-      // chain together
-      if (typeof pipelet === 'function') {
-        pipe$ = pipe$.then(function (data) {
-          // Resolve the return value of the pipelet
-          return Promise.all([pipelet(data), data]);
-        }).then(function (_ref) {
-          var _ref2 = _slicedToArray(_ref, 2);
-
-          var init = _ref2[0];
-          var data = _ref2[1];
-
-          if (handler === 'before') {
-            // Requests can be manipulated or switched in the before handler
-            if (init instanceof Request) {
-              return init;
-            } else if (typeof init === 'object' && init && data instanceof Request) {
-              // Create a new requests with the return value of the pipelet
-              return data.fork(init);
-            }
-          } else if (handler === 'after') {
-            // Responses can be switches in the after handler
-            if (init instanceof Response) {
-              return init;
-            }
-          }
-          return data;
-        });
-      }
-    });
-    return pipe$;
-  }
-
-  function fetch(url, init) {
-    var _this = this;
-
-    var req = undefined;
-    if (url instanceof Request) {
-      req = url;
-    } else {
-      req = new Request(url, init);
-    }
-
-    var pajax = req.pajax;
-
-    // The XMLHttpRequest object is recreated at every request to defeat caching problems in IE
-    var xhr = undefined;
-    try {
-      xhr = new XMLHttpRequest();
-    } catch (e) {
-      throw 'Could not create XMLHttpRequest object';
-    }
-
-    var onLoad = undefined;
-    var onError = undefined;
-    var onTimeout = undefined;
-    var aborted = false;
-
-    function abort() {
-      if (onLoad) xhr.removeEventListener('load', onLoad);
-      if (onError) xhr.removeEventListener('error', onError);
-      if (onTimeout) xhr.removeEventListener('timeout', onTimeout);
-      aborted = true;
-      xhr.abort();
-    }
-
-    // Resolve before pipelets
-    var promise = pipe(pajax, 'before', req).then(function (req) {
-      // Fetch request
-      return new Promise(function (resolve, reject) {
-        var url = req.url;
-
-        if (typeof url !== 'string') {
-          throw 'URL required for request';
-        }
-
-        var method = req.method || 'GET';
-
-        xhr.open(method, url, true);
-
-        // Add custom headers
-        if (req.headers) {
-          req.headers.keys().forEach(function (key) {
-            xhr.setRequestHeader(key, req.headers.get(key));
-          });
-        }
-
-        // Register upload progress listener
-        if (req.progress && xhr.upload) {
-          xhr.upload.addEventListener('progress', function () {
-            for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-              args[_key] = arguments[_key];
-            }
-
-            req.progress.apply(req, [_this].concat(args));
-          }, false);
-        }
-
-        // Set the timeout
-        if (typeof req.timeout === 'number') {
-          xhr.timeout = req.timeout;
-        }
-
-        // Set withCredentials
-        if (req.credentials === 'include') {
-          xhr.withCredentials = true;
-        }
-
-        // Caching
-        if (req.cache) {
-          xhr.setRequestHeader('cache-control', req.cache);
-        }
-
-        // Use blob whenever possible
-        if ('responseType' in xhr) {
-          xhr.responseType = 'blob';
-        }
-
-        var xhrReady = function xhrReady(error) {
-          return function () {
-            var headers = new Headers(xhr.getAllResponseHeaders());
-            var resBody = !('response' in xhr) ? xhr.responseText : xhr.response;
-
-            var resInit = {
-              error: error,
-              headers: headers,
-              status: xhr.status,
-              statusText: xhr.statusText,
-              pajax: pajax,
-              request: req,
-              url: url
-            };
-
-            var res = pajax ? pajax.response(resBody, resInit) : new Response(resBody, resInit);
-            resolve(res);
-          };
-        };
-
-        // Callback for document loaded.
-        onLoad = xhrReady();
-        xhr.addEventListener('load', onLoad);
-
-        // Callback for network errors.
-        onError = xhrReady('Network error');
-        xhr.addEventListener('error', onError);
-
-        // Callback for timeouts
-        onTimeout = xhrReady('Timeout');
-        xhr.addEventListener('timeout', onTimeout);
-
-        var contentType = req.contentType;
-
-        req.consumeBody().then(function (rawBody) {
-          // Fallback to json if body is object and no content type is set
-          if (typeof rawBody === 'object' && rawBody && !contentType) {
-            contentType = 'application/json';
-          }
-          var serializer = def.serializers[contentType];
-          return serializer ? serializer(rawBody) : rawBody;
-        }).then(function (reqBody) {
-          // Add content type header only when body is attached
-          if (reqBody !== undefined && contentType) {
-            xhr.setRequestHeader('Content-Type', contentType);
-          }
-
-          // Don't even call send() if already aborted
-          if (aborted) {
-            return;
-          }
-          xhr.send(reqBody);
-        }, function (err) {
-          xhrReady('Cannot serialize body')();
-        });
-      });
-    }).then(function (res) {
-      // Resolve after pipelets
-      return pipe(pajax, 'after', res);
-    }).then(function (res) {
-      // Resolve or reject based on error
-      if (res.error) {
-        return Promise.reject(res);
-      } else {
-        return Promise.resolve(res);
-      }
-    });
-
-    // Decorate promise with abort() method
-    promise.abort = abort;
-    return promise;
-  }
-
   var _defineProperty = (function (obj, key, value) {
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -747,9 +457,6 @@
     },
     type: function type(contentType) {
       return this.fork({ 'contentType': contentType });
-    },
-    as: function as(method) {
-      return this.fork({ 'method': method });
     },
     onProgress: function onProgress(progressCb) {
       return this.fork({ 'progress': progressCb });
@@ -838,8 +545,8 @@
       if (url instanceof Request) {
         // Extract the request options from the request and
         inits = [].concat(extractInit(url), inits);
-        url = url.url;
         pajax = url.pajax || pajax;
+        url = url.url;
       }
       // make sure init is an array
       inits = [].concat(inits);
@@ -880,76 +587,84 @@
         return this.fork({ 'body': body });
       }
     }, {
+      key: 'as',
+      value: function as(method) {
+        return this.fork({ 'method': method });
+      }
+    }, {
       key: 'fetch',
-      value: function fetch$$() {
-        return fetch(this);
+      value: function fetch() {
+        if (!this.pajax) {
+          throw 'Request has no pajax instance';
+        }
+        return this.pajax.fetch(this);
       }
     }, {
       key: 'get',
       value: function get() {
-        return fetch(this.as('GET')).then(checkStatus);
+        return this.as('GET').fetch().then(checkStatus);
       }
     }, {
       key: 'getAuto',
       value: function getAuto() {
-        return fetch(this.as('GET')).then(checkStatus).then(function (res) {
+        return this.as('GET').fetch().then(checkStatus).then(function (res) {
           return res.auto();
         });
       }
     }, {
       key: 'getJSON',
       value: function getJSON() {
-        return fetch(this.as('GET')).then(checkStatus).then(function (res) {
+        return this.as('GET').fetch().then(checkStatus).then(function (res) {
           return res.json();
         });
       }
     }, {
       key: 'getText',
       value: function getText() {
-        return fetch(this.as('GET')).then(checkStatus).then(function (res) {
+        return this.as('GET').fetch().then(checkStatus).then(function (res) {
           return res.text();
         });
       }
     }, {
       key: 'getBlob',
       value: function getBlob() {
-        return fetch(this.as('GET')).then(checkStatus).then(function (res) {
+        return this.as('GET').fetch().then(checkStatus).then(function (res) {
           return res.blob();
         });
       }
     }, {
       key: 'getArrayBuffer',
       value: function getArrayBuffer() {
-        return fetch(this.as('GET')).then(checkStatus).then(function (res) {
+        return this.as('GET').fetch().then(checkStatus).then(function (res) {
           return res.arrayBuffer();
         });
       }
     }, {
       key: 'getFormData',
       value: function getFormData() {
-        return fetch(this.as('GET')).then(checkStatus).then(function (res) {
+        return this.as('GET').fetch().then(checkStatus).then(function (res) {
           return res.formData();
         });
       }
     }, {
       key: 'delete',
       value: function _delete() {
-        return fetch(this.as('DELETE')).then(checkStatus);
+        return this.as('DELETE').fetch().then(checkStatus);
       }
     }, {
       key: 'post',
       value: function post() {
-        return fetch(this.as('POST')).then(checkStatus);
+        return this.as('POST').fetch().then(checkStatus);
       }
     }, {
       key: 'put',
       value: function put() {
-        return fetch(this.as('PUT')).then(checkStatus);
+        return this.as('PUT').fetch().then(checkStatus);
       }
     }, {
       key: 'patch',
       value: function patch() {
-        return fetch(this.as('PATCH')).then(checkStatus);
+        return this.as('PATCH').fetch().then(checkStatus);
       }
     }]);
 
@@ -957,6 +672,101 @@
   }(Body);
 
   operators$1(Request.prototype);
+
+  function match(ct) {
+    if (!ct) {
+      return null;
+    }
+    var key = Object.keys(def.autoMap).find(function (key) {
+      return ct.startsWith(key);
+    });
+    return key ? def.autoMap[key] : null;
+  }
+
+  var Response = function (_Body) {
+    _inherits(Response, _Body);
+
+    function Response(body) {
+      var _ref = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+      var status = _ref.status;
+      var statusText = _ref.statusText;
+      var headers = _ref.headers;
+      var url = _ref.url;
+      var pajax = _ref.pajax;
+      var error = _ref.error;
+      var request = _ref.request;
+
+      _classCallCheck(this, Response);
+
+      var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Response).call(this));
+
+      _this._body = body;
+      _this.status = status;
+      _this.statusText = statusText;
+      _this.headers = headers;
+      _this.url = url;
+      _this.pajax = pajax;
+      _this.request = request;
+      _this.error = error || undefined;
+      return _this;
+    }
+
+    _createClass(Response, [{
+      key: 'clone',
+      value: function clone() {
+        return new this.constructor(this._body, {
+          status: this.status,
+          statusText: this.statusText,
+          headers: this.headers,
+          url: this.url,
+          pajax: this.pajax,
+          request: this.request,
+          error: this.error
+        });
+      }
+
+      // autoconverts body based on the the response's contentType
+      // dataType is determined in the following order
+      // - if the response is a blob, by the blobs content type
+      // - content type in the response header
+
+    }, {
+      key: 'auto',
+      value: function auto() {
+        var _this2 = this;
+
+        return this.consumeBody().then(function (body) {
+          var dataType = undefined;
+          if (typeof Blob !== 'undefined' && Blob.prototype.isPrototypeOf(body)) {
+            dataType = match(body.type);
+          } else if (_this2.headers.get('content-type')) {
+            var contentType = _this2.headers.get('content-type').split(/ *; */).shift();
+            dataType = match(contentType);
+          }
+
+          if (dataType) {
+            return convertBody(body, dataType).catch(function (err) {
+              // Set error and reject the response when convertion fails
+              _this2.error = err;
+              return Promise.reject(_this2);
+            });
+          } else {
+            return Promise.resolve(body);
+          }
+        });
+      }
+    }, {
+      key: 'ok',
+      get: function get() {
+        // Success: status between 200 and 299 or 304
+        // Failure: status below 200 or beyond 299 excluding 304
+        return this.status >= 200 && this.status < 300 || this.status === 304;
+      }
+    }]);
+
+    return Response;
+  }(Body);
 
   var Pajax = function () {
     function Pajax(init) {
@@ -971,8 +781,297 @@
 
       this.defaults = defaults;
     }
+    // Creates init array by merging pajax inits, defaults and provided inits
+
 
     _createClass(Pajax, [{
+      key: 'options',
+      value: function options() {
+        for (var _len2 = arguments.length, inits = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+          inits[_key2] = arguments[_key2];
+        }
+
+        return [].concat(_toConsumableArray(this.defaults), _toConsumableArray(this.inits), inits).filter(function (init) {
+          return init !== undefined;
+        }); // filter undefined inits
+      }
+      // Return specific options
+
+    }, {
+      key: 'option',
+      value: function option(key) {
+        for (var _len3 = arguments.length, inits = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+          inits[_key3 - 1] = arguments[_key3];
+        }
+
+        return this.options.apply(this, inits).map(function (init) {
+          return init[key];
+        }).filter(function (R) {
+          return R !== undefined;
+        }).pop();
+      }
+      // Creates a request instance
+
+    }, {
+      key: 'request',
+      value: function request(url, init) {
+        // Merge class defaults
+        init = this.options(init);
+        // Determines the Request class
+        var RequestCtor = this.option('Request') || Request;
+        return new RequestCtor(url, init, this);
+      }
+      // Resolves global and pajax pipelets
+
+    }, {
+      key: 'pipe',
+      value: function pipe(handler, result) {
+        var _ref;
+
+        var pipe$ = Promise.resolve(result);
+        // Draw pipelets from options
+        var pipelets = this.options().map(function (init) {
+          return init[handler];
+        });
+        // Flatten and filter the pipelets
+        pipelets = (_ref = []).concat.apply(_ref, _toConsumableArray(pipelets)).filter(function (func) {
+          return typeof func === 'function';
+        });
+        // Merge global and pajax pipelets
+        pipelets = [].concat(_toConsumableArray(def.pipelets[handler]), _toConsumableArray(pipelets));
+
+        pipelets.forEach(function (pipelet) {
+          // chain together
+          if (typeof pipelet === 'function') {
+            pipe$ = pipe$.then(function (result) {
+              // Resolve the return value of the pipelet
+              return Promise.all([pipelet(result), result]);
+            }).then(function (_ref2) {
+              var _ref3 = _slicedToArray(_ref2, 2);
+
+              var init = _ref3[0];
+              var result = _ref3[1];
+
+              if (handler === 'before') {
+                // Requests can be manipulated or switched in the before handler
+                if (init instanceof Request) {
+                  return init;
+                } else if (typeof init === 'object' && init && result instanceof Request) {
+                  // Create a new requests with the return value of the pipelet
+                  return result.fork(init);
+                }
+              } else if (handler === 'after') {
+                // Responses can be switches in the after handler
+                if (init instanceof Response) {
+                  return init;
+                }
+              }
+              return result;
+            });
+          }
+        });
+        return pipe$;
+      }
+      // Extended fetch()
+
+    }, {
+      key: 'fetch',
+      value: function fetch(url, init) {
+        var _this = this;
+
+        var req = undefined;
+        if (url instanceof Request) {
+          req = url;
+        } else {
+          req = this.request(url, init);
+        }
+
+        // The XMLHttpRequest object is recreated on every request to defeat caching problems in IE
+        var xhr = undefined;
+        try {
+          xhr = new XMLHttpRequest();
+        } catch (e) {
+          throw 'Could not create XMLHttpRequest object';
+        }
+
+        var onLoad = undefined;
+        var onError = undefined;
+        var onTimeout = undefined;
+        var aborted = false;
+
+        function abort() {
+          if (onLoad) xhr.removeEventListener('load', onLoad);
+          if (onError) xhr.removeEventListener('error', onError);
+          if (onTimeout) xhr.removeEventListener('timeout', onTimeout);
+          aborted = true;
+          xhr.abort();
+        }
+
+        // Resolve before pipelets
+        var fetch$ = this.pipe('before', req).then(function (req) {
+          // Do the xhr request
+          return new Promise(function (resolve, reject) {
+            var url = req.url;
+
+            if (typeof url !== 'string') {
+              throw 'URL required for request';
+            }
+
+            var method = req.method || 'GET';
+
+            xhr.open(method, url, true);
+
+            // Add custom headers
+            if (req.headers) {
+              req.headers.keys().forEach(function (key) {
+                xhr.setRequestHeader(key, req.headers.get(key));
+              });
+            }
+
+            // Register upload progress listener
+            if (req.progress && xhr.upload) {
+              xhr.upload.addEventListener('progress', function () {
+                for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+                  args[_key4] = arguments[_key4];
+                }
+
+                req.progress.apply(req, [_this].concat(args));
+              }, false);
+            }
+
+            // Set the timeout
+            if (typeof req.timeout === 'number') {
+              xhr.timeout = req.timeout;
+            }
+
+            // Set credentials
+            if (req.credentials === 'include') {
+              xhr.withCredentials = true;
+            }
+
+            // Caching
+            if (req.cache) {
+              xhr.setRequestHeader('cache-control', req.cache);
+            }
+
+            // Use blob whenever possible
+            if ('responseType' in xhr && typeof Blob !== 'undefined') {
+              xhr.responseType = 'blob';
+            }
+
+            var xhrReady = function xhrReady(error) {
+              return function () {
+                var headers = new Headers(xhr.getAllResponseHeaders());
+                var resBody = !('response' in xhr) ? xhr.responseText : xhr.response;
+
+                var resInit = {
+                  error: error,
+                  headers: headers,
+                  status: xhr.status,
+                  statusText: xhr.statusText,
+                  pajax: _this,
+                  request: req,
+                  url: url
+                };
+
+                // Determines the Response class
+                var ResponseCtor = _this.option('Response') || Response;
+                resolve(new ResponseCtor(resBody, resInit));
+              };
+            };
+
+            // Callback for document loaded.
+            onLoad = xhrReady();
+            xhr.addEventListener('load', onLoad);
+
+            // Callback for network errors.
+            onError = xhrReady('Network error');
+            xhr.addEventListener('error', onError);
+
+            // Callback for timeouts
+            onTimeout = xhrReady('Timeout');
+            xhr.addEventListener('timeout', onTimeout);
+
+            var contentType = req.contentType;
+
+            req.consumeBody().then(function (rawBody) {
+              // Fallback to json if body is object and no content type is set
+              if (typeof rawBody === 'object' && rawBody && !contentType) {
+                contentType = 'application/json';
+              }
+              var serializer = def.serializers[contentType];
+              return serializer ? serializer(rawBody) : rawBody;
+            }).then(function (reqBody) {
+              // Add content type header only when body is attached
+              if (reqBody !== undefined && contentType) {
+                xhr.setRequestHeader('Content-Type', contentType);
+              }
+
+              // Don't even call send() if already aborted
+              if (aborted) {
+                return;
+              }
+              xhr.send(reqBody);
+            }, function (err) {
+              xhrReady('Cannot serialize body')();
+            });
+          });
+        }).then(function (res) {
+          // Resolve after pipelets
+          return _this.pipe('after', res);
+        }).then(function (res) {
+          // Resolve or reject based on error
+          if (res.error) {
+            return Promise.reject(res);
+          } else {
+            return Promise.resolve(res);
+          }
+        });
+
+        // Decorate promise with abort() method
+        fetch$.abort = abort;
+        return fetch$;
+      }
+
+      // pajax pipelets
+
+    }, {
+      key: 'before',
+      value: function before(func) {
+        return this.fork({ before: [func] });
+      }
+    }, {
+      key: 'after',
+      value: function after(func) {
+        return this.fork({ after: [func] });
+      }
+    }, {
+      key: 'clone',
+      value: function clone() {
+        return this.fork();
+      }
+    }, {
+      key: 'fork',
+      value: function fork(init) {
+        return new this.constructor([].concat(_toConsumableArray(this.inits), [init]));
+      }
+    }, {
+      key: 'JSON',
+      value: function JSON() {
+        var ct = 'application/json';
+        return this.type(ct).accept(ct);
+      }
+    }, {
+      key: 'URLEncoded',
+      value: function URLEncoded() {
+        var ct = 'application/x-www-form-urlencoded';
+        return this.type(ct);
+      }
+      // ===
+
+      // Request helpers
+
+    }, {
       key: 'get',
       value: function get(url) {
         var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
@@ -1048,71 +1147,6 @@
         var init = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
         return this.request(url, init).attach(body).patch();
-      }
-    }, {
-      key: 'fetch',
-      value: function fetch$$(url, init) {
-        return this.request(url, init).fetch();
-      }
-    }, {
-      key: 'request',
-      value: function request(url, init) {
-        var RequestCtor = this.constructor.Request || Request;
-        // Merge class default and inits with init
-        init = [].concat(this.defaults, this.inits, init);
-        return new RequestCtor(url, init, this);
-      }
-    }, {
-      key: 'response',
-      value: function response(body, init) {
-        var ResponseCtor = this.constructor.Response || Response;
-        return new ResponseCtor(body, init, this);
-      }
-    }, {
-      key: 'getPipelets',
-      value: function getPipelets(handler) {
-        var _ref;
-
-        // Merge class default and inits pipelets
-        var pipelets = [].concat(_toConsumableArray(this.defaults), _toConsumableArray(this.inits)).map(function (init) {
-          return init && init[handler];
-        });
-        // flatten and filter the pipelets
-        return (_ref = []).concat.apply(_ref, _toConsumableArray(pipelets)).filter(function (func) {
-          return typeof func === 'function';
-        });
-      }
-    }, {
-      key: 'before',
-      value: function before(func) {
-        return this.fork({ before: [func] });
-      }
-    }, {
-      key: 'after',
-      value: function after(func) {
-        return this.fork({ after: [func] });
-      }
-    }, {
-      key: 'clone',
-      value: function clone() {
-        return this.fork();
-      }
-    }, {
-      key: 'fork',
-      value: function fork(init) {
-        return new this.constructor([].concat(_toConsumableArray(this.inits), [init]));
-      }
-    }, {
-      key: 'JSON',
-      value: function JSON() {
-        var ct = 'application/json';
-        return this.type(ct).accept(ct);
-      }
-    }, {
-      key: 'URLEncoded',
-      value: function URLEncoded() {
-        var ct = 'application/x-www-form-urlencoded';
-        return this.type(ct);
       }
     }], [{
       key: 'get',
@@ -1192,22 +1226,17 @@
         return this.request(url, init).attach(body).patch();
       }
     }, {
-      key: 'fetch',
-      value: function fetch$$(url, init) {
-        return fetch(url, init);
-      }
-    }, {
       key: 'request',
       value: function request(url, init) {
-        var RequestCtor = this.Request || Request;
-        return new RequestCtor(url, init);
+        return new Pajax().request(url, init);
       }
     }, {
-      key: 'response',
-      value: function response(body, init) {
-        var ResponseCtor = this.Response || Response;
-        return new ResponseCtor(body, init, this);
+      key: 'fetch',
+      value: function fetch(url, init) {
+        return new Pajax().fetch(url, init);
       }
+      // ===
+
     }]);
 
     return Pajax;
@@ -1218,6 +1247,7 @@
   Pajax.checkStatus = checkStatus;
   Pajax.def = def;
   Pajax.Headers = Headers;
+  Pajax.Body = Body;
   Pajax.Request = Request;
   Pajax.Response = Response;
 

@@ -4,10 +4,24 @@ let auth = {
   token: 'salt'
 };
 
+let MyRequest = class extends Pajax.Request {
+  authenticate(token2) {
+    return this.header('authorization', `Bearer ${this.pajax.auth.token} ${token2}`);
+  }
+};
+
+let MyResponse = class extends Pajax.Response {
+  get isAuthenticated() {
+    return true;
+  }
+};
+
 class MyPajax extends Pajax {
 
   constructor(auth, init) {
     super(init, {
+      Request: MyRequest,
+      Response: MyResponse,
       before: req=>{req.beforeCalled = true; return req;},
       after: [res=>{res.afterCalled1 = true; return res;},
               res=>{res.afterCalled2 = true; return res;}]
@@ -41,21 +55,7 @@ class MyPajax extends Pajax {
                  .authenticate('pepper')
                  .post();
   }
-
-
 }
-
-MyPajax.Request = class extends Pajax.Request {
-  authenticate(token2) {
-    return this.header('authorization', `Bearer ${this.pajax.auth.token} ${token2}`);
-  }
-};
-
-MyPajax.Response = class extends Pajax.Response {
-  get isAuthenticated() {
-    return true;
-  }
-};
 
 describe('custom', function() {
 

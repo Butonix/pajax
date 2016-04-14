@@ -247,7 +247,6 @@ pajax.request('/url')
 
 Operators on pajax and request instances:
 ```
-- as(method)                        // Sets the http method
 - accept(type)                      // Sets the accept header
 - header(object)                    // headers via object
 - header(string, string)            // header via key-value
@@ -257,11 +256,12 @@ Operators on pajax and request instances:
 - onProgress(callback)              // Progress callback
 - setTimeout(number)                // Sets the timeout
 ```
-Operators on request instances
+Operators only on request instances
 ```
+- as(method)                        // Sets the http method
 - attach(body)                      // Sets the body
 ```
-Operators on pajax instances
+Operators only on pajax instances
 ```
 - JSON()                            // Sets the accept header and content-type to `application/json`
 - URLEncoded()                      // Sets the content-type to `application/x-www-form-urlencoded`
@@ -300,13 +300,31 @@ See the following code for a more advanced example
 // Our authenticator
 let auth = {token: 'g54gsfdgw34qj*9764w3'};
 
+// Custom request class
+let MyRequest = class extends Pajax.Request {
+  // Operator for adding the auth token to request header
+  authenticate() {
+    return this.header('authorization', `Bearer ${auth.token}`);
+  }
+}
+
+// Custom response class
+let MyResponse = class extends Pajax.Response {
+  // Checks if we are authenticated
+  get isAuthenticated() {
+    return this.headers.get('X-authentication-level']) > 0;
+  }
+}
+
 // Custom pajax class
 class MyPajax extends Pajax {
 
   constructor(init) {
     this.super(init, {
       // Provide some class defaults
-      cache: 'no-cache'
+      Request: MyRequest,   // Set Request class
+      Response: MyResponse, // Set Response class
+      cache: 'no-cache'     // Disables caching by default
     });
   }
 
@@ -325,21 +343,7 @@ class MyPajax extends Pajax {
   }
 }
 
-// Custom request class
-MyPajax.Request = class extends Pajax.Request {
-  // Operator for adding the auth token to request header
-  authenticate() {
-    return this.header('authorization', `Bearer ${auth.token}`);
-  }
-}
 
-// Custom response class
-MyPajax.Response = class extends Pajax.Response {
-  // Checks if we are authenticated
-  get isAuthenticated() {
-    return this.headers.get('X-authentication-level']) > 0;
-  }
-}
 
 let pajax = new MyPajax();
 

@@ -34,6 +34,4 @@ describe('static fetch', function() {
            assert.strictEqual(body, 'error');
          }, noCall).then(done, done);
   });
-  
-
 });

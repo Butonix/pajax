@@ -245,24 +245,9 @@
 
   function checkStatus(res) {
     if (!res.error && !res.ok) {
-      // Unknown status code
-      if (res.status < 100 || res.status >= 1000) {
-        res.error = 'Invalid status code';
-      } else {
-        // Use statusText as error
-        if (res.statusText) {
-          res.error = res.statusText;
-        } else {
-          // Unknown error
-          res.error = 'Request failed';
-        }
-      }
+      res.error = res.statusText || 'Request failed';
     }
-    if (res.error) {
-      return Promise.reject(res);
-    } else {
-      return Promise.resolve(res);
-    }
+    return res.error ? Promise.reject(res) : Promise.resolve(res);
   }
 
   function normalizeName(name) {
@@ -548,7 +533,7 @@
         pajax = url.pajax || pajax;
         url = url.url;
       }
-      // make sure init is an array
+      // make sure inits is an array
       inits = [].concat(inits);
 
       // Convert init array into single init object
@@ -702,9 +687,10 @@
       var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Response).call(this));
 
       _this._body = body;
+      _this.type = 'default';
       _this.status = status;
       _this.statusText = statusText;
-      _this.headers = headers;
+      _this.headers = new Headers(headers);
       _this.url = url;
       _this.pajax = pajax;
       _this.request = request;
@@ -718,7 +704,7 @@
         return new this.constructor(this._body, {
           status: this.status,
           statusText: this.statusText,
-          headers: this.headers,
+          headers: new Headers(this.headers),
           url: this.url,
           pajax: this.pajax,
           request: this.request,
@@ -759,9 +745,9 @@
     }, {
       key: 'ok',
       get: function get() {
-        // Success: status between 200 and 299 or 304
-        // Failure: status below 200 or beyond 299 excluding 304
-        return this.status >= 200 && this.status < 300 || this.status === 304;
+        // Success: status between 200 and 299
+        // Failure: status below 200 or beyond 299
+        return this.status >= 200 && this.status < 300;
       }
     }]);
 
@@ -961,22 +947,19 @@
 
             var xhrReady = function xhrReady(error) {
               return function () {
-                var headers = new Headers(xhr.getAllResponseHeaders());
                 var resBody = !('response' in xhr) ? xhr.responseText : xhr.response;
 
-                var resInit = {
+                // Determines the Response class
+                var ResponseCtor = _this.option('Response') || Response;
+                resolve(new ResponseCtor(resBody, {
                   error: error,
-                  headers: headers,
+                  headers: xhr.getAllResponseHeaders(),
                   status: xhr.status,
                   statusText: xhr.statusText,
                   pajax: _this,
                   request: req,
                   url: url
-                };
-
-                // Determines the Response class
-                var ResponseCtor = _this.option('Response') || Response;
-                resolve(new ResponseCtor(resBody, resInit));
+                }));
               };
             };
 

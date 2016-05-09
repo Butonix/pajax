@@ -9,9 +9,9 @@
     "xhr",
     "promise"
   ],
-  "homepage": "https://github.com/n-fuse/pajax",
+  "homepage": "https://github.com/pajax/pajax",
   "moduleType": [
-    "amd"
+    "node"
   ],
   "ignore": [
     "**/.*",

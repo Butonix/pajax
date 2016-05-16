@@ -978,11 +978,13 @@
             var contentType = req.contentType;
 
             req.consumeBody().then(function (rawBody) {
-              // Fallback to json if body is object and no content type is set
-              if (typeof rawBody === 'object' && rawBody && !contentType) {
+              if (rawBody === undefined) {
+                return undefined;
+              } else if (rawBody && typeof rawBody === 'object' && !(rawBody instanceof FormData) && contentType === undefined) {
+                // Fallback to json if body is object (excluding formData) and no content type is set
                 contentType = 'application/json';
               }
-              var serializer = def.serializers[contentType];
+              var serializer = !!contentType && def.serializers[contentType];
               return serializer ? serializer(rawBody) : rawBody;
             }).then(function (reqBody) {
               // Add content type header only when body is attached

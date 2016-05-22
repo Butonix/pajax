@@ -66,6 +66,7 @@ Pajax.post(url, reqBody, opts)
 
 #### requests methods
 
+- fetch(url, opts)
 - get(url, opts)
 - delete(url, opts)
 - post(url, reqBody, opts)
@@ -74,6 +75,7 @@ Pajax.post(url, reqBody, opts)
 
 ### The response object
 
+A request is resolved with a response object.
 You can call one of the following methods to extract the body from a response:
 
 - text()
@@ -123,23 +125,12 @@ The options are very similar to the [Fetch](https://fetch.spec.whatwg.org/) opti
 - timeout (integer) - number of milliseconds to wait for a response
 - credentials (string) - `same-origin`, `include` - Use `include` to send cookies in a CORS request.
 - body (mixed) - The body you want to add to your request
+- noStatusCheck (boolean) - Does not reject on erroneous status codes if set to true
+
 
 ### fetch()
 
-The fetch() method is close to the standard [Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch) specification
-
-```javascript
-Pajax.fetch(url, opts)
-     .then(res=>{
-       res; // response object
-       res.ok:   // true
-     }, res=>{
-       // called only on network errors
-       res.error; // the error
-     });
-```
-
-fetch() does not reject on HTTP status error codes (non 2xx).
+`fetch` does not reject on HTTP status error codes (non 2xx).
 Use the Pajax.checkStatus handler to do so.
 
 ```javascript
@@ -176,12 +167,12 @@ pajax.put(...)
 
 ### Requests
 
-A Request instance represents a request to a specific resource and can be provided as a fetch() argument.
+A Request instance represents a preconfigured request to a specific resource.
 The constructor has the same signature as the fetch method.
 
 ```javascript
 let req = new Pajax.Request(url, opts);
-Pajax.fetch(req).then(...);
+req.send().then(res=>{...})
 ```
 
 Request objects can also be created with the request() method on a pajax instance.
@@ -191,20 +182,10 @@ They inherit the default options of the pajax instance.
 let pajax = new Pajax({cache: 'no-cache'});
 let req = pajax.request(url, {contentType: 'application/json'});
 
-Pajax.fetch(req).then(...); // cache = no-cache, contentType = application/json
+req.send().then(...); // cache = no-cache, contentType = application/json
 ```
 
-Instead of calling `Pajax.fetch(request)` you can call fetch directly on a request
-without an argument.
-
-```javascript
-pajax.request(url, opts).fetch().then(res=>{ ... });
-// is an alias for
-let req = pajax.request(url, opts);
-Pajax.fetch(req).then(res=>{ ... });
-```
-
-Same goes for the get(), getJSON(), post(), put() etc. methods
+Besides `req.send(request)` you can make use of the other request methods
 
 ```javascript
 pajax.request(url, opts).get().then(res=>{ ... })
@@ -256,11 +237,14 @@ Operators on pajax and request instances:
 - onProgress(callback)              // Progress callback
 - setTimeout(number)                // Sets the timeout
 ```
+
 Operators only on request instances
 ```
 - as(method)                        // Sets the http method
+- noCheck()                         // Sets noStatusCheck to true
 - attach(body)                      // Sets the body
 ```
+
 Operators only on pajax instances
 ```
 - JSON()                            // Sets the accept header and content-type to `application/json`

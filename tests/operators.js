@@ -7,6 +7,7 @@ describe('operators', function() {
 
     var req = Pajax.request('/url')
                    .as('PATCH')
+                   .noCheck()
                    .header({'foo': 'bar'})
                    .header('bar', 'foo')
                    .noCache()
@@ -17,6 +18,7 @@ describe('operators', function() {
                    .attach({foo:'bar'});
 
     assert.strictEqual(req.method, 'PATCH');
+    assert.strictEqual(req.noStatusCheck, true);
     assert.deepEqual(req.headers.get('foo'), 'bar');
     assert.deepEqual(req.headers.get('bar'), 'foo');
     assert.deepEqual(req.headers.headers, { 'foo': ['bar'], 'bar': ['foo'] });

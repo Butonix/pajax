@@ -1,6 +1,6 @@
 # pajax
 
-[![Build Status](http://img.shields.io/travis/n-fuse/pajax.svg?style=flat)](https://travis-ci.org/n-fuse/pajax)
+[![Build Status](https://travis-ci.org/pajax/pajax.svg?branch=master)](https://travis-ci.org/pajax/pajax)
 
 pajax is a library for promise based XHR request.
 It is very close to the [Fetch](https://fetch.spec.whatwg.org/) standard.

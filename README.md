@@ -39,7 +39,7 @@ bower install pajax
 
 ## Quick start
 
-Pajax provides some methods to perform http requests.
+Pajax provides methods to perform http requests.
 Each method returns a promise which resolves in a response object.
 
 ```javascript

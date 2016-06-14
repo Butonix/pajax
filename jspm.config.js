@@ -1,4 +1,16 @@
 SystemJS.config({
+  paths: {
+    "npm:": "jspm_packages/npm/",
+    "pajax/": "lib/"
+  },
+  browserConfig: {
+    "baseURL": "/"
+  },
+  devConfig: {
+    "map": {
+      "plugin-babel": "npm:systemjs-plugin-babel@0.0.12"
+    }
+  },
   transpiler: "plugin-babel",
   packages: {
     "pajax": {
@@ -18,8 +30,6 @@ SystemJS.config({
     "npm:@*/*.json",
     "npm:*.json"
   ],
-  map: {
-    "plugin-babel": "npm:systemjs-plugin-babel@0.0.8"
-  },
+  map: {},
   packages: {}
 });

@@ -1,44 +1,46 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global.Pajax = factory());
-}(this, function () { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+  typeof define === 'function' && define.amd ? define(['exports'], factory) :
+  (factory((global.Pajax = global.Pajax || {})));
+}(this, function (exports) { 'use strict';
 
-  function sliceIterator(arr, i) {
-    var _arr = [];
-    var _n = true;
-    var _d = false;
-    var _e = undefined;
+  var _slicedToArray = (function () {
+    function sliceIterator(arr, i) {
+      var _arr = [];
+      var _n = true;
+      var _d = false;
+      var _e = undefined;
 
-    try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);
-
-        if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;
-      _e = err;
-    } finally {
       try {
-        if (!_n && _i["return"]) _i["return"]();
+        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+          _arr.push(_s.value);
+
+          if (i && _arr.length === i) break;
+        }
+      } catch (err) {
+        _d = true;
+        _e = err;
       } finally {
-        if (_d) throw _e;
+        try {
+          if (!_n && _i["return"]) _i["return"]();
+        } finally {
+          if (_d) throw _e;
+        }
       }
+
+      return _arr;
     }
 
-    return _arr;
-  }
-
-  function _slicedToArray (arr, i) {
-    if (Array.isArray(arr)) {
-      return arr;
-    } else if (Symbol.iterator in Object(arr)) {
-      return sliceIterator(arr, i);
-    } else {
-      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-    }
-  };
+    return function (arr, i) {
+      if (Array.isArray(arr)) {
+        return arr;
+      } else if (Symbol.iterator in Object(arr)) {
+        return sliceIterator(arr, i);
+      } else {
+        throw new TypeError("Invalid attempt to destructure non-iterable instance");
+      }
+    };
+  })();
 
   var _toConsumableArray = (function (arr) {
     if (Array.isArray(arr)) {
@@ -56,21 +58,23 @@
     }
   })
 
-  function defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];
-      descriptor.enumerable = descriptor.enumerable || false;
-      descriptor.configurable = true;
-      if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, descriptor.key, descriptor);
+  var _createClass = (function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
     }
-  }
 
-  function _createClass (Constructor, protoProps, staticProps) {
-    if (protoProps) defineProperties(Constructor.prototype, protoProps);
-    if (staticProps) defineProperties(Constructor, staticProps);
-    return Constructor;
-  };
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  })();
 
   var _possibleConstructorReturn = (function (self, call) {
     if (!self) {
@@ -543,7 +547,7 @@
         var _this2 = this;
 
         return this.consumeBody().then(function (body) {
-          var dataType = undefined;
+          var dataType = void 0;
           if (typeof Blob !== 'undefined' && Blob.prototype.isPrototypeOf(body)) {
             dataType = match(body.type);
           } else if (_this2.headers.get('content-type')) {
@@ -576,16 +580,16 @@
 
   function _send (req) {
     // The XMLHttpRequest object is recreated on every request to defeat caching problems in IE
-    var xhr = undefined;
+    var xhr = void 0;
     try {
       xhr = new XMLHttpRequest();
     } catch (e) {
       throw 'Could not create XMLHttpRequest object';
     }
 
-    var onLoad = undefined;
-    var onError = undefined;
-    var onTimeout = undefined;
+    var onLoad = void 0;
+    var onError = void 0;
+    var onTimeout = void 0;
     var aborted = false;
 
     var abort = function abort() {
@@ -1249,6 +1253,8 @@
   Pajax.Request = Request;
   Pajax.Response = Response;
 
-  return Pajax;
+  exports['default'] = Pajax;
+
+  Object.defineProperty(exports, '__esModule', { value: true });
 
 }));

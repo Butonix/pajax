@@ -1,7 +1,7 @@
 {
   "name": "pajax",
   "description": "Promise based ajax/fetch library",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "keywords": [
     "ajax",
     "fetch",

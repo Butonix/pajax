@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-  typeof define === 'function' && define.amd ? define(['exports'], factory) :
-  (factory((global.Pajax = global.Pajax || {})));
-}(this, function (exports) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+   (global.Pajax = factory());
+}(this, function () { 'use strict';
 
   var _slicedToArray = (function () {
     function sliceIterator(arr, i) {
@@ -1253,8 +1253,6 @@
   Pajax.Request = Request;
   Pajax.Response = Response;
 
-  exports['default'] = Pajax;
-
-  Object.defineProperty(exports, '__esModule', { value: true });
+  return Pajax;
 
 }));
